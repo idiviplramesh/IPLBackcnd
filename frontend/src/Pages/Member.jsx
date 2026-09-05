@@ -11,92 +11,89 @@ function Member() {
   const [members, setMembers] = useState([]);
   const [areas, setAreas] = useState([]);
 
-  const [form, setForm] = useState({
-    ...emptyForm,
-  });
+  const [form, setForm] = useState(
+    emptyForm
+  );
 
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] =
+    useState(null);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] =
+    useState("");
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
-  const [error, setError] = useState("");
+  const [error, setError] =
+    useState("");
 
   // =====================================================
-  // LOAD MEMBERS + AREAS
+  // LOAD MEMBERS
   // =====================================================
 
   useEffect(() => {
-    loadData();
+    loadMembers();
+    loadAreas();
   }, []);
 
   // =====================================================
-  // GET ARRAY FROM API RESPONSE
+  // LOAD MEMBER LIST
   // =====================================================
 
-  const getArray = (response) => {
-    if (Array.isArray(response)) {
-      return response;
-    }
-
-    if (Array.isArray(response?.data)) {
-      return response.data;
-    }
-
-    if (Array.isArray(response?.data?.data)) {
-      return response.data.data;
-    }
-
-    return [];
-  };
-
-  // =====================================================
-  // LOAD DATA
-  // =====================================================
-
-  const loadData = async () => {
+  const loadMembers = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const [
-        memberResponse,
-        areaResponse,
-      ] = await Promise.all([
-        api.get("/members"),
-        api.get("/areas"),
-      ]);
+      const response =
+        await api.get("/members");
 
-      console.log(
-        "MEMBERS API RESPONSE:",
-        memberResponse.data
-      );
+      const data =
+        Array.isArray(response.data)
+          ? response.data
+          : response.data?.data || [];
 
-      console.log(
-        "AREAS API RESPONSE:",
-        areaResponse.data
-      );
-
-      setMembers(
-        getArray(memberResponse.data)
-      );
-
-      setAreas(
-        getArray(areaResponse.data)
-      );
+      setMembers(data);
     } catch (err) {
       console.error(
-        "LOAD MEMBER DATA ERROR:",
+        "LOAD MEMBERS ERROR:",
         err
       );
 
       setError(
         err.response?.data?.message ||
-          "Unable to load member data"
+          "Unable to load members"
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // =====================================================
+  // LOAD AREAS
+  // =====================================================
+
+  const loadAreas = async () => {
+    try {
+      const response =
+        await api.get("/areas");
+
+      const data =
+        Array.isArray(response.data)
+          ? response.data
+          : response.data?.data || [];
+
+      setAreas(data);
+    } catch (err) {
+      console.error(
+        "LOAD AREAS ERROR:",
+        err
+      );
+
+      setError(
+        err.response?.data?.message ||
+          "Unable to load areas"
+      );
     }
   };
 
@@ -105,113 +102,98 @@ function Member() {
   // =====================================================
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const {
+      name,
+      value,
+    } = e.target;
 
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      ...form,
       [name]: value,
-    }));
-
-    setError("");
+    });
   };
 
   // =====================================================
-  // SAVE MEMBER
+  // SAVE / UPDATE MEMBER
   // =====================================================
 
   const saveMember = async (e) => {
     e.preventDefault();
 
-    setError("");
+    const memberName =
+      form.MemberName.trim();
 
-    // ---------------------------------------------------
+    const mobileNumber =
+      form.MobileNumber.trim();
+
+    const areaCode =
+      form.AreaCode;
+
+    // ===================================================
     // VALIDATION
-    // ---------------------------------------------------
+    // ===================================================
 
-    if (!form.MemberName.trim()) {
-      setError("Member name is required");
-      return;
-    }
-
-    if (!form.MobileNumber.trim()) {
-      setError("Mobile number is required");
-      return;
-    }
-
-    if (!form.AreaCode) {
-      setError("Area is required");
-      return;
-    }
-
-    // ---------------------------------------------------
-    // MOBILE VALIDATION
-    // ---------------------------------------------------
-
-    const mobile = form.MobileNumber.trim();
-
-    if (!/^[0-9]{10,20}$/.test(mobile)) {
+    if (!memberName) {
       setError(
-        "Please enter a valid mobile number"
+        "Member name is required"
+      );
+      return;
+    }
+
+    if (!mobileNumber) {
+      setError(
+        "Mobile number is required"
+      );
+      return;
+    }
+
+    if (!areaCode) {
+      setError(
+        "Area is required"
       );
       return;
     }
 
     try {
       setLoading(true);
+      setError("");
 
       const payload = {
         MemberName:
-          form.MemberName.trim(),
+          memberName,
 
         MobileNumber:
-          mobile,
+          mobileNumber,
 
         AreaCode:
-          Number(form.AreaCode),
+          Number(areaCode),
       };
 
-      console.log(
-        "MEMBER SAVE PAYLOAD:",
-        payload
-      );
-
-      // -------------------------------------------------
+      // =================================================
       // UPDATE
-      // -------------------------------------------------
+      // =================================================
 
-      if (editingId) {
-        const response = await api.put(
+      if (editingId !== null) {
+        await api.put(
           `/members/${editingId}`,
           payload
         );
-
-        console.log(
-          "MEMBER UPDATE RESPONSE:",
-          response.data
-        );
       }
 
-      // -------------------------------------------------
-      // CREATE
-      // MemberCode is NOT sent.
-      // Backend generates it automatically.
-      // -------------------------------------------------
+      // =================================================
+      // INSERT
+      // =================================================
 
       else {
-        const response = await api.post(
+        await api.post(
           "/members",
           payload
-        );
-
-        console.log(
-          "MEMBER CREATE RESPONSE:",
-          response.data
         );
       }
 
       clearForm();
 
-      await loadData();
+      await loadMembers();
     } catch (err) {
       console.error(
         "SAVE MEMBER ERROR:",
@@ -233,20 +215,17 @@ function Member() {
 
   const editMember = (member) => {
     const id =
-      member.MemberCode ??
-      member.memberCode;
+      member.MemberCode;
 
-    if (!id) {
+    if (
+      id === undefined ||
+      id === null
+    ) {
       setError(
-        "Member Code not found"
+        "Member number not found"
       );
       return;
     }
-
-    console.log(
-      "EDIT MEMBER:",
-      member
-    );
 
     setEditingId(id);
 
@@ -258,9 +237,11 @@ function Member() {
         member.MobileNumber || "",
 
       AreaCode:
-        member.AreaCode !== null &&
-        member.AreaCode !== undefined
-          ? String(member.AreaCode)
+        member.AreaCode !==
+        undefined
+          ? String(
+              member.AreaCode
+            )
           : "",
     });
 
@@ -276,17 +257,23 @@ function Member() {
   // DELETE MEMBER
   // =====================================================
 
-  const deleteMember = async (id) => {
-    if (!id) {
+  const deleteMember = async (
+    memberCode
+  ) => {
+    if (
+      memberCode === undefined ||
+      memberCode === null
+    ) {
       setError(
-        "Member Code not found"
+        "Member number not found"
       );
       return;
     }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this member?"
-    );
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to delete this member?"
+      );
 
     if (!confirmed) {
       return;
@@ -296,21 +283,17 @@ function Member() {
       setLoading(true);
       setError("");
 
-      console.log(
-        "DELETE MEMBER CODE:",
-        id
+      await api.delete(
+        `/members/${memberCode}`
       );
 
-      const response = await api.delete(
-        `/members/${id}`
-      );
+      if (
+        editingId === memberCode
+      ) {
+        clearForm();
+      }
 
-      console.log(
-        "DELETE MEMBER RESPONSE:",
-        response.data
-      );
-
-      await loadData();
+      await loadMembers();
     } catch (err) {
       console.error(
         "DELETE MEMBER ERROR:",
@@ -336,7 +319,6 @@ function Member() {
     });
 
     setEditingId(null);
-
     setError("");
   };
 
@@ -344,61 +326,93 @@ function Member() {
   // SEARCH
   // =====================================================
 
-  const searchText =
-    search.trim().toLowerCase();
-
   const filteredMembers =
     members.filter((member) => {
-      const text = [
-        member.MemberCode,
-        member.MemberName,
-        member.MobileNumber,
-        member.AreaCode,
-        member.AreaName,
-      ]
-        .filter(
-          (value) =>
-            value !== null &&
-            value !== undefined
-        )
-        .join(" ")
-        .toLowerCase();
+      const searchText =
+        search
+          .toLowerCase()
+          .trim();
 
-      return text.includes(searchText);
+      if (!searchText) {
+        return true;
+      }
+
+      return (
+        String(
+          member.MemberCode ||
+            ""
+        )
+          .toLowerCase()
+          .includes(searchText) ||
+
+        String(
+          member.MemberName ||
+            ""
+        )
+          .toLowerCase()
+          .includes(searchText) ||
+
+        String(
+          member.MobileNumber ||
+            ""
+        )
+          .toLowerCase()
+          .includes(searchText) ||
+
+        String(
+          member.AreaCode ||
+            ""
+        )
+          .toLowerCase()
+          .includes(searchText) ||
+
+        String(
+          member.AreaName ||
+            ""
+        )
+          .toLowerCase()
+          .includes(searchText)
+      );
     });
 
   // =====================================================
-  // RENDER
+  // UI
   // =====================================================
 
   return (
     <div>
+
       {/* =================================================
-          PAGE HEADER
+          HEADER
       ================================================= */}
 
       <div className="page-header">
+
         <div>
-          <h2>Member Master</h2>
+
+          <h2>
+            Member Details
+          </h2>
 
           <p>
             Manage member information
           </p>
+
         </div>
+
       </div>
 
       {/* =================================================
-          FORM CARD
+          FORM
       ================================================= */}
 
       <div className="master-form-card">
+
         <h3>
-          {editingId
+          {editingId !== null
             ? "Edit Member"
             : "Add Member"}
         </h3>
-
-        {/* ERROR */}
 
         {error && (
           <div className="error-message">
@@ -406,58 +420,90 @@ function Member() {
           </div>
         )}
 
-        <form onSubmit={saveMember}>
+        <form
+          onSubmit={saveMember}
+        >
+
           <div className="form-grid">
 
-            {/* =================================================
+            {/* =========================================
+                MEMBER NO
+            ========================================= */}
+
+            {editingId !== null && (
+              <div className="form-group">
+
+                <label>
+                  Member No
+                </label>
+
+                <input
+                  value={
+                    editingId
+                  }
+                  disabled
+                  readOnly
+                />
+
+              </div>
+            )}
+
+            {/* =========================================
                 MEMBER NAME
-            ================================================= */}
+            ========================================= */}
 
             <div className="form-group">
+
               <label>
                 Member Name *
               </label>
 
               <input
-                type="text"
                 name="MemberName"
                 value={
                   form.MemberName
                 }
-                onChange={handleChange}
+                onChange={
+                  handleChange
+                }
                 placeholder="Enter member name"
-                maxLength={50}
-                disabled={loading}
+                maxLength={100}
+                autoComplete="off"
               />
+
             </div>
 
-            {/* =================================================
+            {/* =========================================
                 MOBILE NUMBER
-            ================================================= */}
+            ========================================= */}
 
             <div className="form-group">
+
               <label>
                 Mobile Number *
               </label>
 
               <input
-                type="text"
                 name="MobileNumber"
                 value={
                   form.MobileNumber
                 }
-                onChange={handleChange}
+                onChange={
+                  handleChange
+                }
                 placeholder="Enter mobile number"
-                maxLength={20}
-                disabled={loading}
+                maxLength={15}
+                autoComplete="off"
               />
+
             </div>
 
-            {/* =================================================
+            {/* =========================================
                 AREA
-            ================================================= */}
+            ========================================= */}
 
             <div className="form-group">
+
               <label>
                 Area *
               </label>
@@ -467,49 +513,52 @@ function Member() {
                 value={
                   form.AreaCode
                 }
-                onChange={handleChange}
-                disabled={loading}
+                onChange={
+                  handleChange
+                }
               >
+
                 <option value="">
                   Select Area
                 </option>
 
-                {areas.map((area) => {
-                  const areaCode =
-                    area.AreaCode ??
-                    area.areaCode;
-
-                  const areaName =
-                    area.AreaName ??
-                    area.areaName ??
-                    "";
-
-                  return (
+                {areas.map(
+                  (area) => (
                     <option
-                      key={areaCode}
-                      value={areaCode}
+                      key={
+                        area.AreaCode
+                      }
+                      value={
+                        area.AreaCode
+                      }
                     >
-                      {areaName}
+                      {area.AreaName}
                     </option>
-                  );
-                })}
+                  )
+                )}
+
               </select>
+
             </div>
+
           </div>
 
           {/* =================================================
-              BUTTONS
+              FORM BUTTONS
           ================================================= */}
 
           <div className="form-actions">
+
             <button
               type="submit"
               className="primary-button"
-              disabled={loading}
+              disabled={
+                loading
+              }
             >
               {loading
                 ? "Saving..."
-                : editingId
+                : editingId !== null
                 ? "Update"
                 : "Save"}
             </button>
@@ -517,13 +566,20 @@ function Member() {
             <button
               type="button"
               className="secondary-button"
-              onClick={clearForm}
-              disabled={loading}
+              onClick={
+                clearForm
+              }
+              disabled={
+                loading
+              }
             >
               Clear
             </button>
+
           </div>
+
         </form>
+
       </div>
 
       {/* =================================================
@@ -531,13 +587,14 @@ function Member() {
       ================================================= */}
 
       <div className="table-card">
+
         <div className="table-header">
+
           <h3>
             Member List
           </h3>
 
           <input
-            type="text"
             className="search-input"
             placeholder="Search member..."
             value={search}
@@ -547,14 +604,19 @@ function Member() {
               )
             }
           />
+
         </div>
 
         <div className="table-wrapper">
+
           <table>
+
             <thead>
+
               <tr>
+
                 <th>
-                  Member Code
+                  Member No
                 </th>
 
                 <th>
@@ -576,118 +638,128 @@ function Member() {
                 <th>
                   Action
                 </th>
+
               </tr>
+
             </thead>
 
             <tbody>
+
+              {filteredMembers.map(
+                (member) => {
+
+                  const id =
+                    member.MemberCode;
+
+                  return (
+                    <tr
+                      key={id}
+                    >
+
+                      {/* MEMBER NO */}
+
+                      <td>
+                        {
+                          member.MemberCode
+                        }
+                      </td>
+
+                      {/* MEMBER NAME */}
+
+                      <td>
+                        {
+                          member.MemberName
+                        }
+                      </td>
+
+                      {/* MOBILE NUMBER */}
+
+                      <td>
+                        {
+                          member.MobileNumber
+                        }
+                      </td>
+
+                      {/* AREA CODE */}
+
+                      <td>
+                        {
+                          member.AreaCode
+                        }
+                      </td>
+
+                      {/* AREA NAME */}
+
+                      <td>
+                        {
+                          member.AreaName
+                        }
+                      </td>
+
+                      {/* ACTION */}
+
+                      <td>
+
+                        {/* EDIT */}
+
+                        <button
+                          type="button"
+                          className="edit-button"
+                          title="Edit"
+                          onClick={() =>
+                            editMember(
+                              member
+                            )
+                          }
+                          disabled={
+                            loading
+                          }
+                        >
+                          ✏️
+                        </button>
+
+                        {/* DELETE */}
+
+                        <button
+                          type="button"
+                          className="delete-button"
+                          title="Delete"
+                          onClick={() =>
+                            deleteMember(
+                              id
+                            )
+                          }
+                          disabled={
+                            loading
+                          }
+                        >
+                          🗑️
+                        </button>
+
+                      </td>
+
+                    </tr>
+                  );
+                }
+              )}
+
               {/* =================================================
-                  MEMBERS
+                  NO RECORDS
               ================================================= */}
 
               {!loading &&
-                filteredMembers.map(
-                  (member) => {
-                    const id =
-                      member.MemberCode ??
-                      member.memberCode;
+                filteredMembers.length ===
+                  0 && (
+                  <tr>
 
-                    return (
-                      <tr key={id}>
-                        {/* MEMBER CODE */}
+                    <td
+                      colSpan="6"
+                      className="empty-row"
+                    >
+                      No members found
+                    </td>
 
-                        <td>
-                          {member.MemberCode}
-                        </td>
-
-                        {/* MEMBER NAME */}
-
-                        <td>
-                          {member.MemberName}
-                        </td>
-
-                        {/* MOBILE */}
-
-                        <td>
-                          {member.MobileNumber}
-                        </td>
-
-                        {/* AREA CODE */}
-
-                        <td>
-                          {member.AreaCode}
-                        </td>
-
-                        {/* AREA NAME */}
-
-                        <td>
-                          {member.AreaName ||
-                            "-"}
-                        </td>
-
-                        {/* ACTION */}
-
-                        <td>
-                          <div
-                            style={{
-                              display:
-                                "flex",
-                              gap: "6px",
-                              alignItems:
-                                "center",
-                            }}
-                          >
-                            {/* EDIT */}
-
-                            <button
-                              type="button"
-                              className="edit-button"
-                              title="Edit Member"
-                              onClick={() =>
-                                editMember(
-                                  member
-                                )
-                              }
-                              disabled={
-                                loading
-                              }
-                              style={{
-                                cursor:
-                                  "pointer",
-                                fontSize:
-                                  "16px",
-                              }}
-                            >
-                              ✏️
-                            </button>
-
-                            {/* DELETE */}
-
-                            <button
-                              type="button"
-                              className="delete-button"
-                              title="Delete Member"
-                              onClick={() =>
-                                deleteMember(
-                                  id
-                                )
-                              }
-                              disabled={
-                                loading
-                              }
-                              style={{
-                                cursor:
-                                  "pointer",
-                                fontSize:
-                                  "16px",
-                              }}
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }
+                  </tr>
                 )}
 
               {/* =================================================
@@ -696,35 +768,25 @@ function Member() {
 
               {loading && (
                 <tr>
+
                   <td
                     colSpan="6"
                     className="empty-row"
                   >
-                    Loading members...
+                    Loading...
                   </td>
+
                 </tr>
               )}
 
-              {/* =================================================
-                  NO DATA
-              ================================================= */}
-
-              {!loading &&
-                filteredMembers.length ===
-                  0 && (
-                  <tr>
-                    <td
-                      colSpan="6"
-                      className="empty-row"
-                    >
-                      No members found
-                    </td>
-                  </tr>
-                )}
             </tbody>
+
           </table>
+
         </div>
+
       </div>
+
     </div>
   );
 }

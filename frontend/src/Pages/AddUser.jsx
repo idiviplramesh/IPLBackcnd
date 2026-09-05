@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
-
-const API_BASE_URL = "http://localhost:5000/api";
 
 function AddUser() {
   const navigate = useNavigate();
-
   const { isAdmin } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -21,9 +18,9 @@ function AddUser() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // =====================================================
+  // ==========================================================
   // INPUT CHANGE
-  // =====================================================
+  // ==========================================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,9 +34,9 @@ function AddUser() {
     setError("");
   };
 
-  // =====================================================
+  // ==========================================================
   // CREATE USER
-  // =====================================================
+  // ==========================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,8 +44,23 @@ function AddUser() {
     setMessage("");
     setError("");
 
+    // --------------------------------------------------------
+    // VALIDATION
+    // --------------------------------------------------------
+
     if (!formData.userCode) {
       setError("Please enter User Code.");
+      return;
+    }
+
+    const userCode =
+      Number(formData.userCode);
+
+    if (
+      !Number.isInteger(userCode) ||
+      userCode <= 0
+    ) {
+      setError("Please enter a valid User Code.");
       return;
     }
 
@@ -57,50 +69,75 @@ function AddUser() {
       return;
     }
 
+    if (
+      formData.username.trim().length < 3
+    ) {
+      setError(
+        "Username must contain at least 3 characters."
+      );
+      return;
+    }
+
     if (!formData.password) {
       setError("Please enter Password.");
       return;
     }
 
-    if (formData.username.trim().length < 3) {
-      setError("Username must contain at least 3 characters.");
+    if (formData.password.length < 4) {
+      setError(
+        "Password must contain at least 4 characters."
+      );
       return;
     }
 
-    if (formData.password.length < 4) {
-      setError("Password must contain at least 4 characters.");
+    if (
+      !["ADMIN", "MEMBER"].includes(
+        formData.userType
+      )
+    ) {
+      setError("Invalid User Type.");
+      return;
+    }
+
+    // --------------------------------------------------------
+    // TOKEN
+    // --------------------------------------------------------
+
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+      setError(
+        "Authentication token not found. Please login again."
+      );
       return;
     }
 
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("token");
+      // ------------------------------------------------------
+      // API
+      // /api/auth/create-user
+      // ------------------------------------------------------
 
-      if (!token) {
-        setError("Authentication token not found. Please login again.");
-        return;
-      }
-
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/create-user`,
+      const response = await api.post(
+        "/auth/create-user",
         {
-          userCode: Number(formData.userCode),
-          username: formData.username.trim(),
-          password: formData.password,
-          userType: formData.userType,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          userCode,
+          username:
+            formData.username.trim(),
+          password:
+            formData.password,
+          userType:
+            formData.userType,
         }
       );
 
       if (response.data?.success) {
         setMessage(
-          response.data.message || "User created successfully."
+          response.data.message ||
+            "User created successfully."
         );
 
         setFormData({
@@ -111,21 +148,31 @@ function AddUser() {
         });
       } else {
         setError(
-          response.data?.message || "Unable to create user."
+          response.data?.message ||
+            "Unable to create user."
         );
       }
     } catch (err) {
-      console.error("CREATE USER ERROR:", err);
+      console.error(
+        "CREATE USER ERROR:",
+        err
+      );
 
-      if (err.response?.status === 401) {
+      if (
+        err.response?.status === 401
+      ) {
         setError(
           "Session expired. Please login again."
         );
-      } else if (err.response?.status === 403) {
+      } else if (
+        err.response?.status === 403
+      ) {
         setError(
           "Only ADMIN users can create users."
         );
-      } else if (err.response?.status === 409) {
+      } else if (
+        err.response?.status === 409
+      ) {
         setError(
           err.response?.data?.message ||
             "User Code or Username already exists."
@@ -141,46 +188,50 @@ function AddUser() {
     }
   };
 
-  // =====================================================
-  // SECURITY
-  // =====================================================
+  // ==========================================================
+  // ACCESS CONTROL
+  // ==========================================================
 
   if (!isAdmin) {
     return (
       <div className="page-center">
         <div className="access-denied-card">
-          <div className="access-denied-icon">🔒</div>
 
-          <h2>Access Denied</h2>
+          <div className="access-denied-icon">
+            🔒
+          </div>
+
+          <h2>
+            Access Denied
+          </h2>
 
           <p>
-            Only administrators can access this page.
+            Only administrators can create users.
           </p>
 
           <button
             type="button"
-            onClick={() => navigate("/dashboard")}
+            onClick={() =>
+              navigate("/dashboard")
+            }
             className="primary-button"
           >
             Go to Dashboard
           </button>
+
         </div>
       </div>
     );
   }
 
-  // =====================================================
-  // UI
-  //
-  // NOTE: The sidebar and header are already rendered by
-  // <DashboardLayout /> (via <Sidebar /> and <Navbar />),
-  // which wraps this component through <Outlet />.
-  // This component must ONLY render the "Add User" page
-  // content. Do NOT re-render sidebar/header markup here.
-  // =====================================================
+  // ==========================================================
+  // PAGE
+  // ==========================================================
 
   return (
     <div className="add-user-page">
+
+      {/* PAGE HEADER */}
 
       <div className="page-title-row">
 
@@ -195,7 +246,9 @@ function AddUser() {
         <button
           type="button"
           className="back-button"
-          onClick={() => navigate("/dashboard")}
+          onClick={() =>
+            navigate("/dashboard")
+          }
         >
           ← Back
         </button>
@@ -213,14 +266,19 @@ function AddUser() {
           </div>
 
           <div>
-            <h3>User Information</h3>
+            <h3>
+              User Information
+            </h3>
 
             <p>
-              Enter the details to create a new user account.
+              Enter the details to create
+              a new user account.
             </p>
           </div>
 
         </div>
+
+        {/* SUCCESS */}
 
         {message && (
           <div className="success-message">
@@ -228,13 +286,17 @@ function AddUser() {
           </div>
         )}
 
+        {/* ERROR */}
+
         {error && (
           <div className="error-message">
             ⚠ {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+        >
 
           <div className="form-grid">
 
@@ -253,8 +315,11 @@ function AddUser() {
                 type="number"
                 min="1"
                 placeholder="Enter user code"
-                value={formData.userCode}
+                value={
+                  formData.userCode
+                }
                 onChange={handleChange}
+                disabled={loading}
               />
 
               <small>
@@ -278,8 +343,11 @@ function AddUser() {
                 type="text"
                 maxLength="50"
                 placeholder="Enter username"
-                value={formData.username}
+                value={
+                  formData.username
+                }
                 onChange={handleChange}
+                disabled={loading}
               />
 
               <small>
@@ -303,8 +371,11 @@ function AddUser() {
                 type="password"
                 maxLength="50"
                 placeholder="Enter password"
-                value={formData.password}
+                value={
+                  formData.password
+                }
                 onChange={handleChange}
+                disabled={loading}
               />
 
               <small>
@@ -325,9 +396,13 @@ function AddUser() {
               <select
                 id="userType"
                 name="userType"
-                value={formData.userType}
+                value={
+                  formData.userType
+                }
                 onChange={handleChange}
+                disabled={loading}
               >
+
                 <option value="MEMBER">
                   MEMBER
                 </option>
@@ -335,6 +410,7 @@ function AddUser() {
                 <option value="ADMIN">
                   ADMIN
                 </option>
+
               </select>
 
               <small>
@@ -352,7 +428,9 @@ function AddUser() {
             <button
               type="button"
               className="cancel-button"
-              onClick={() => navigate("/dashboard")}
+              onClick={() =>
+                navigate("/dashboard")
+              }
               disabled={loading}
             >
               Cancel
@@ -363,6 +441,7 @@ function AddUser() {
               className="create-button"
               disabled={loading}
             >
+
               {loading ? (
                 <>
                   <span className="button-spinner"></span>
@@ -373,6 +452,7 @@ function AddUser() {
                   ✓ Create User
                 </>
               )}
+
             </button>
 
           </div>

@@ -9,18 +9,33 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 
+// ============================================================
+// PAGES
+// ============================================================
+
 import Login from "./Pages/Login";
 import Dashboard from "./Pages/Dashboard";
+
 import Bank from "./Pages/Bank";
 import Area from "./Pages/Area";
 import Company from "./Pages/Company";
 import Member from "./Pages/Member";
-import AddUser from "./Pages/AddUser";
+import Head from "./Pages/HeadMaster";
 
-// =====================================================
-// ADMIN ONLY
-// UserCode 1 = ADMIN
-// =====================================================
+import OpeningBalance from "./Pages/OpeningBalance";
+
+import Payment from "./Pages/Payment";
+import Receipt from "./Pages/Receipt";
+
+import Reports from "./Pages/Reports";
+import DayBook from "./Pages/DayBook";
+
+import AddUser from "./Pages/AddUser";
+import Settings from "./Pages/Settings";
+
+// ============================================================
+// ADMIN ROUTE
+// ============================================================
 
 function AdminRoute({ children }) {
   const savedUser = localStorage.getItem("user");
@@ -31,15 +46,48 @@ function AdminRoute({ children }) {
     user = savedUser
       ? JSON.parse(savedUser)
       : null;
-  } catch {
+  } catch (error) {
+    console.error("USER JSON ERROR:", error);
     user = null;
   }
 
+  /*
+   * ADMIN ACCESS
+   *
+   * UserCode 1 is treated as the main administrator.
+   *
+   * UserType ADMIN is also treated as administrator.
+   *
+   * SMD is also allowed because your current application
+   * uses SMD as the administrative user.
+   */
+
+  const userCode = Number(user?.UserCode);
+
+  const userType = String(
+    user?.UserType || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const userName = String(
+    user?.UserName || ""
+  )
+    .trim()
+    .toUpperCase();
+
   const isAdmin =
-    Number(user?.UserCode) === 1 ||
-    String(user?.UserType || "")
-      .trim()
-      .toUpperCase() === "ADMIN";
+    userCode === 1 ||
+    userType === "ADMIN" ||
+    userType === "SMD" ||
+    userName === "SMD";
+
+  console.log("ADMIN ROUTE CHECK:", {
+    userCode,
+    userType,
+    userName,
+    isAdmin,
+  });
 
   if (!isAdmin) {
     return (
@@ -53,29 +101,30 @@ function AdminRoute({ children }) {
   return children;
 }
 
-// =====================================================
+// ============================================================
 // APP
-// =====================================================
+// ============================================================
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <AuthProvider>
+      <BrowserRouter>
 
         <Routes>
 
-          {/* ========================================= */}
-          {/* LOGIN */}
-          {/* ========================================= */}
+          {/* ==================================================
+              LOGIN
+          ================================================== */}
 
           <Route
             path="/login"
             element={<Login />}
           />
 
-          {/* ========================================= */}
-          {/* PROTECTED APPLICATION */}
-          {/* ========================================= */}
+
+          {/* ==================================================
+              PROTECTED APPLICATION
+          ================================================== */}
 
           <Route
             element={
@@ -85,39 +134,84 @@ function App() {
             }
           >
 
-            {/* DASHBOARD */}
+            {/* ==================================================
+                DASHBOARD
+            ================================================== */}
+
             <Route
               path="/dashboard"
               element={<Dashboard />}
             />
 
-            {/* BANK */}
+
+            {/* ==================================================
+                MASTER
+            ================================================== */}
+
             <Route
               path="/banks"
               element={<Bank />}
             />
 
-            {/* AREA */}
             <Route
               path="/areas"
               element={<Area />}
             />
 
-            {/* COMPANY */}
             <Route
               path="/companies"
               element={<Company />}
             />
 
-            {/* MEMBER */}
             <Route
               path="/members"
               element={<Member />}
             />
 
-            {/* ===================================== */}
-            {/* ADMIN ONLY - ADD USER */}
-            {/* ===================================== */}
+            <Route
+              path="/heads"
+              element={<Head />}
+            />
+
+            <Route
+              path="/opening-balance"
+              element={<OpeningBalance />}
+            />
+
+
+            {/* ==================================================
+                TRANSACTIONS
+            ================================================== */}
+
+            <Route
+              path="/payments"
+              element={<Payment />}
+            />
+
+            <Route
+              path="/receipts"
+              element={<Receipt />}
+            />
+
+
+            {/* ==================================================
+                REPORTS
+            ================================================== */}
+
+            <Route
+              path="/reports"
+              element={<Reports />}
+            />
+
+            <Route
+              path="/reports/day-book"
+              element={<DayBook />}
+            />
+
+
+            {/* ==================================================
+                ADMINISTRATION
+            ================================================== */}
 
             <Route
               path="/add-user"
@@ -128,11 +222,21 @@ function App() {
               }
             />
 
+            <Route
+              path="/settings"
+              element={
+                <AdminRoute>
+                  <Settings />
+                </AdminRoute>
+              }
+            />
+
           </Route>
 
-          {/* ========================================= */}
-          {/* ROOT */}
-          {/* ========================================= */}
+
+          {/* ==================================================
+              DEFAULT
+          ================================================== */}
 
           <Route
             path="/"
@@ -144,9 +248,9 @@ function App() {
             }
           />
 
-          {/* ========================================= */}
-          {/* UNKNOWN URL */}
-          {/* ========================================= */}
+          {/* ==================================================
+              UNKNOWN URL
+          ================================================== */}
 
           <Route
             path="*"
@@ -160,8 +264,8 @@ function App() {
 
         </Routes>
 
-      </AuthProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

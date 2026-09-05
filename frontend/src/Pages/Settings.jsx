@@ -162,15 +162,6 @@ function Settings() {
           <button
             type="button"
             className="menu-item"
-            onClick={() => navigate("/users")}
-          >
-            <span>👥</span>
-            <span>Users</span>
-          </button>
-
-          <button
-            type="button"
-            className="menu-item"
             onClick={() => navigate("/companies")}
           >
             <span>🏢</span>

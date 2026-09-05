@@ -1,3 +1,1034 @@
+// const express = require("express");
+// const { getPool, sql } = require("../config/db");
+
+// const router = express.Router();
+
+// // =====================================================
+// // DEFAULT AUDIT VALUES
+// // Change these later if you have logged-in user/node
+// // =====================================================
+
+// const DEFAULT_C_USER = 1;
+// const DEFAULT_C_NODE = 1;
+
+// // =====================================================
+// // GET ALL BANKS
+// // GET /api/banks
+// // =====================================================
+
+// router.get("/", async (req, res) => {
+//   try {
+//     const pool = await getPool();
+
+//     const result = await pool.request().query(`
+//       SELECT
+//         BankCode,
+//         BankName,
+//         BranchName,
+//         IFSCCode,
+//         Status,
+//         C_Date,
+//         C_User,
+//         C_Node,
+//         E_Date,
+//         E_User,
+//         E_Node
+//       FROM dbo.tbl_Bank
+//       ORDER BY BankName
+//     `);
+
+//     res.json({
+//       success: true,
+//       data: result.recordset,
+//     });
+//   } catch (error) {
+//     console.error("GET BANKS ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to load banks",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// // =====================================================
+// // GET BANK BY CODE
+// // GET /api/banks/:id
+// // =====================================================
+
+// router.get("/:id", async (req, res) => {
+//   try {
+//     const bankCode = Number(req.params.id);
+
+//     if (!Number.isInteger(bankCode)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Bank Code",
+//       });
+//     }
+
+//     const pool = await getPool();
+
+//     const result = await pool
+//       .request()
+//       .input("BankCode", sql.Int, bankCode)
+//       .query(`
+//         SELECT
+//           BankCode,
+//           BankName,
+//           BranchName,
+//           IFSCCode,
+//           Status,
+//           C_Date,
+//           C_User,
+//           C_Node,
+//           E_Date,
+//           E_User,
+//           E_Node
+//         FROM dbo.tbl_Bank
+//         WHERE BankCode = @BankCode
+//       `);
+
+//     if (result.recordset.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Bank not found",
+//       });
+//     }
+
+//     res.json({
+//       success: true,
+//       data: result.recordset[0],
+//     });
+//   } catch (error) {
+//     console.error("GET BANK ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to load bank",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// // =====================================================
+// // CREATE BANK
+// // POST /api/banks
+// // =====================================================
+
+// router.post("/", async (req, res) => {
+//   try {
+//     const {
+//       BankName,
+//       BranchName,
+//       IFSCCode,
+//     } = req.body;
+
+//     // -----------------------------
+//     // Validation
+//     // -----------------------------
+
+//     if (!BankName || !BankName.trim()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Bank name is required",
+//       });
+//     }
+
+//     const pool = await getPool();
+
+//     // -----------------------------
+//     // Check duplicate Bank Name
+//     // -----------------------------
+
+//     const duplicate = await pool
+//       .request()
+//       .input(
+//         "BankName",
+//         sql.VarChar(50),
+//         BankName.trim()
+//       )
+//       .query(`
+//         SELECT TOP 1
+//           BankCode
+//         FROM dbo.tbl_Bank
+//         WHERE BankName = @BankName
+//       `);
+
+//     if (duplicate.recordset.length > 0) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "Bank already exists",
+//       });
+//     }
+
+//     // -----------------------------
+//     // Generate next BankCode
+//     // -----------------------------
+
+//     const codeResult = await pool.request().query(`
+//       SELECT
+//         ISNULL(MAX(BankCode), 0) + 1 AS NextBankCode
+//       FROM dbo.tbl_Bank
+//     `);
+
+//     const nextBankCode =
+//       codeResult.recordset[0].NextBankCode;
+
+//     // -----------------------------
+//     // Insert
+//     // -----------------------------
+
+//     const result = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         nextBankCode
+//       )
+//       .input(
+//         "BankName",
+//         sql.VarChar(50),
+//         BankName.trim()
+//       )
+//       .input(
+//         "BranchName",
+//         sql.NVarChar(50),
+//         BranchName?.trim() || ""
+//       )
+//       .input(
+//         "IFSCCode",
+//         sql.NVarChar(50),
+//         IFSCCode?.trim() || ""
+//       )
+//       .input(
+//         "C_User",
+//         sql.Int,
+//         DEFAULT_C_USER
+//       )
+//       .input(
+//         "C_Node",
+//         sql.Int,
+//         DEFAULT_C_NODE
+//       )
+//       .query(`
+//         INSERT INTO dbo.tbl_Bank
+//         (
+//           BankCode,
+//           BankName,
+//           BranchName,
+//           IFSCCode,
+//           Status,
+//           C_Date,
+//           C_User,
+//           C_Node
+//         )
+//         OUTPUT
+//           INSERTED.BankCode,
+//           INSERTED.BankName,
+//           INSERTED.BranchName,
+//           INSERTED.IFSCCode,
+//           INSERTED.Status,
+//           INSERTED.C_Date,
+//           INSERTED.C_User,
+//           INSERTED.C_Node
+//         VALUES
+//         (
+//           @BankCode,
+//           @BankName,
+//           @BranchName,
+//           @IFSCCode,
+//           1,
+//           GETDATE(),
+//           @C_User,
+//           @C_Node
+//         )
+//       `);
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Bank created successfully",
+//       data: result.recordset[0],
+//     });
+//   } catch (error) {
+//     console.error("CREATE BANK ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to create bank",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// // =====================================================
+// // UPDATE BANK
+// // PUT /api/banks/:id
+// // =====================================================
+
+// router.put("/:id", async (req, res) => {
+//   try {
+//     const bankCode = Number(req.params.id);
+
+//     const {
+//       BankName,
+//       BranchName,
+//       IFSCCode,
+//       Status,
+//     } = req.body;
+
+//     if (!Number.isInteger(bankCode)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Bank Code",
+//       });
+//     }
+
+//     if (!BankName || !BankName.trim()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Bank name is required",
+//       });
+//     }
+
+//     const pool = await getPool();
+
+//     // -----------------------------
+//     // Check duplicate name
+//     // -----------------------------
+
+//     const duplicate = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .input(
+//         "BankName",
+//         sql.VarChar(50),
+//         BankName.trim()
+//       )
+//       .query(`
+//         SELECT TOP 1
+//           BankCode
+//         FROM dbo.tbl_Bank
+//         WHERE BankName = @BankName
+//           AND BankCode <> @BankCode
+//       `);
+
+//     if (duplicate.recordset.length > 0) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "Another bank with this name already exists",
+//       });
+//     }
+
+//     // -----------------------------
+//     // Update
+//     // -----------------------------
+
+//     const result = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .input(
+//         "BankName",
+//         sql.VarChar(50),
+//         BankName.trim()
+//       )
+//       .input(
+//         "BranchName",
+//         sql.NVarChar(50),
+//         BranchName?.trim() || ""
+//       )
+//       .input(
+//         "IFSCCode",
+//         sql.NVarChar(50),
+//         IFSCCode?.trim() || ""
+//       )
+//       .input(
+//         "Status",
+//         sql.Bit,
+//         Status === false ? 0 : 1
+//       )
+//       .input(
+//         "E_User",
+//         sql.Int,
+//         DEFAULT_C_USER
+//       )
+//       .input(
+//         "E_Node",
+//         sql.Int,
+//         DEFAULT_C_NODE
+//       )
+//       .query(`
+//         UPDATE dbo.tbl_Bank
+//         SET
+//           BankName = @BankName,
+//           BranchName = @BranchName,
+//           IFSCCode = @IFSCCode,
+//           Status = @Status,
+//           E_Date = GETDATE(),
+//           E_User = @E_User,
+//           E_Node = @E_Node
+//         OUTPUT
+//           INSERTED.BankCode,
+//           INSERTED.BankName,
+//           INSERTED.BranchName,
+//           INSERTED.IFSCCode,
+//           INSERTED.Status,
+//           INSERTED.C_Date,
+//           INSERTED.C_User,
+//           INSERTED.C_Node,
+//           INSERTED.E_Date,
+//           INSERTED.E_User,
+//           INSERTED.E_Node
+//         WHERE BankCode = @BankCode
+//       `);
+
+//     if (result.recordset.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Bank not found",
+//       });
+//     }
+
+//     res.json({
+//       success: true,
+//       message: "Bank updated successfully",
+//       data: result.recordset[0],
+//     });
+//   } catch (error) {
+//     console.error("UPDATE BANK ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to update bank",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// // =====================================================
+// // DELETE BANK
+// // DELETE /api/banks/:id
+// // =====================================================
+
+// router.delete("/:id", async (req, res) => {
+//   try {
+//     const bankCode = Number(req.params.id);
+
+//     if (!Number.isInteger(bankCode)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Bank Code",
+//       });
+//     }
+
+//     const pool = await getPool();
+
+//     // -----------------------------
+//     // Check company references
+//     // -----------------------------
+
+//     const companyReference = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .query(`
+//         SELECT COUNT(*) AS Total
+//         FROM dbo.tbl_Company
+//         WHERE BankCode = @BankCode
+//       `);
+
+//     if (
+//       companyReference.recordset[0].Total > 0
+//     ) {
+//       return res.status(409).json({
+//         success: false,
+//         message:
+//           "Bank cannot be deleted because companies are using it",
+//       });
+//     }
+
+//     // -----------------------------
+//     // Delete
+//     // -----------------------------
+
+//     const result = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .query(`
+//         DELETE FROM dbo.tbl_Bank
+//         WHERE BankCode = @BankCode
+//       `);
+
+//     if (result.rowsAffected[0] === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Bank not found",
+//       });
+//     }
+
+//     res.json({
+//       success: true,
+//       message: "Bank deleted successfully",
+//     });
+//   } catch (error) {
+//     console.error("DELETE BANK ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to delete bank",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// module.exports = router;
+
+
+
+// const express = require("express");
+// const { getPool, sql } = require("../config/db");
+
+// const router = express.Router();
+
+// // =====================================================
+// // DEFAULT AUDIT VALUES
+// // =====================================================
+// // Change these later when logged-in User/Node values
+// // are available from authentication/session.
+// // =====================================================
+
+// const DEFAULT_C_USER = 1;
+// const DEFAULT_C_NODE = 1;
+
+
+// // =====================================================
+// // GET ALL BANKS
+// // GET /api/banks
+// // =====================================================
+
+// router.get("/", async (req, res) => {
+//   try {
+//     const pool = await getPool();
+
+//     const result = await pool.request().query(`
+//       SELECT
+//         BankCode,
+//         BankName,
+//         BranchName,
+//         IFSCCode,
+//         Status,
+//         C_Date,
+//         C_User,
+//         C_Node,
+//         E_Date,
+//         E_User,
+//         E_Node
+//       FROM dbo.tbl_Bank
+//       ORDER BY BankName
+//     `);
+
+//     res.json({
+//       success: true,
+//       data: result.recordset,
+//     });
+
+//   } catch (error) {
+//     console.error("GET BANKS ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to load banks",
+//       error: error.message,
+//     });
+//   }
+// });
+
+
+// // =====================================================
+// // GET BANK BY CODE
+// // GET /api/banks/:id
+// // =====================================================
+
+// router.get("/:id", async (req, res) => {
+//   try {
+//     const bankCode = Number(req.params.id);
+
+//     if (!Number.isInteger(bankCode)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Bank Code",
+//       });
+//     }
+
+//     const pool = await getPool();
+
+//     const result = await pool
+//       .request()
+//       .input("BankCode", sql.Int, bankCode)
+//       .query(`
+//         SELECT
+//           BankCode,
+//           BankName,
+//           BranchName,
+//           IFSCCode,
+//           Status,
+//           C_Date,
+//           C_User,
+//           C_Node,
+//           E_Date,
+//           E_User,
+//           E_Node
+//         FROM dbo.tbl_Bank
+//         WHERE BankCode = @BankCode
+//       `);
+
+//     if (result.recordset.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Bank not found",
+//       });
+//     }
+
+//     res.json({
+//       success: true,
+//       data: result.recordset[0],
+//     });
+
+//   } catch (error) {
+//     console.error("GET BANK ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to load bank",
+//       error: error.message,
+//     });
+//   }
+// });
+
+
+// // =====================================================
+// // CREATE BANK
+// // POST /api/banks
+// //
+// // Uses:
+// // sp_Bank_AddEdit
+// //
+// // BankCode = NULL
+// // => Stored procedure generates new BankCode
+// // =====================================================
+
+// router.post("/", async (req, res) => {
+//   try {
+//     const {
+//       BankName,
+//       BranchName,
+//       IFSCCode,
+//       Status,
+//     } = req.body;
+
+//     // -------------------------------------------------
+//     // Validation
+//     // -------------------------------------------------
+
+//     if (!BankName || !BankName.trim()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Bank name is required",
+//       });
+//     }
+
+//     const pool = await getPool();
+
+//     // -------------------------------------------------
+//     // Check duplicate Bank Name
+//     // -------------------------------------------------
+
+//     const duplicate = await pool
+//       .request()
+//       .input(
+//         "BankName",
+//         sql.VarChar(50),
+//         BankName.trim()
+//       )
+//       .query(`
+//         SELECT TOP 1
+//           BankCode
+//         FROM dbo.tbl_Bank
+//         WHERE BankName = @BankName
+//       `);
+
+//     if (duplicate.recordset.length > 0) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "Bank already exists",
+//       });
+//     }
+
+//     // -------------------------------------------------
+//     // ADD BANK USING STORED PROCEDURE
+//     // -------------------------------------------------
+
+//     const result = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         null
+//       )
+//       .input(
+//         "BankName",
+//         sql.VarChar(50),
+//         BankName.trim()
+//       )
+//       .input(
+//         "BranchName",
+//         sql.NVarChar(50),
+//         BranchName?.trim() || ""
+//       )
+//       .input(
+//         "IFSCCode",
+//         sql.NVarChar(50),
+//         IFSCCode?.trim() || ""
+//       )
+//       .input(
+//         "Status",
+//         sql.Bit,
+//         Status === false ? 0 : 1
+//       )
+//       .input(
+//         "User",
+//         sql.SmallInt,
+//         DEFAULT_C_USER
+//       )
+//       .input(
+//         "Node",
+//         sql.SmallInt,
+//         DEFAULT_C_NODE
+//       )
+//       .execute("sp_Bank_AddEdit");
+
+//     // -------------------------------------------------
+//     // Stored procedure returns:
+//     //
+//     // SELECT @BankCode
+//     // -------------------------------------------------
+
+//     const bankCode =
+//       result.recordset?.[0]?.BankCode ??
+//       result.recordset?.[0]?.[""] ??
+//       null;
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Bank created successfully",
+//       data: {
+//         BankCode: bankCode,
+//         BankName: BankName.trim(),
+//         BranchName: BranchName?.trim() || "",
+//         IFSCCode: IFSCCode?.trim() || "",
+//         Status: Status === false ? false : true,
+//       },
+//     });
+
+//   } catch (error) {
+//     console.error("CREATE BANK ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to create bank",
+//       error: error.message,
+//     });
+//   }
+// });
+
+
+// // =====================================================
+// // UPDATE BANK
+// // PUT /api/banks/:id
+// //
+// // Uses:
+// // sp_Bank_AddEdit
+// //
+// // BankCode = existing BankCode
+// // => Stored procedure performs UPDATE
+// // =====================================================
+
+// router.put("/:id", async (req, res) => {
+//   try {
+//     const bankCode = Number(req.params.id);
+
+//     const {
+//       BankName,
+//       BranchName,
+//       IFSCCode,
+//       Status,
+//     } = req.body;
+
+//     // -------------------------------------------------
+//     // Validate Bank Code
+//     // -------------------------------------------------
+
+//     if (!Number.isInteger(bankCode)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Bank Code",
+//       });
+//     }
+
+//     // -------------------------------------------------
+//     // Validate Bank Name
+//     // -------------------------------------------------
+
+//     if (!BankName || !BankName.trim()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Bank name is required",
+//       });
+//     }
+
+//     const pool = await getPool();
+
+//     // -------------------------------------------------
+//     // Check bank exists
+//     // -------------------------------------------------
+
+//     const existing = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .query(`
+//         SELECT
+//           BankCode
+//         FROM dbo.tbl_Bank
+//         WHERE BankCode = @BankCode
+//       `);
+
+//     if (existing.recordset.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Bank not found",
+//       });
+//     }
+
+//     // -------------------------------------------------
+//     // Check duplicate Bank Name
+//     // -------------------------------------------------
+
+//     const duplicate = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .input(
+//         "BankName",
+//         sql.VarChar(50),
+//         BankName.trim()
+//       )
+//       .query(`
+//         SELECT TOP 1
+//           BankCode
+//         FROM dbo.tbl_Bank
+//         WHERE BankName = @BankName
+//           AND BankCode <> @BankCode
+//       `);
+
+//     if (duplicate.recordset.length > 0) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "Another bank with this name already exists",
+//       });
+//     }
+
+//     // -------------------------------------------------
+//     // UPDATE BANK USING STORED PROCEDURE
+//     // -------------------------------------------------
+
+//     const result = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .input(
+//         "BankName",
+//         sql.VarChar(50),
+//         BankName.trim()
+//       )
+//       .input(
+//         "BranchName",
+//         sql.NVarChar(50),
+//         BranchName?.trim() || ""
+//       )
+//       .input(
+//         "IFSCCode",
+//         sql.NVarChar(50),
+//         IFSCCode?.trim() || ""
+//       )
+//       .input(
+//         "Status",
+//         sql.Bit,
+//         Status === false ? 0 : 1
+//       )
+//       .input(
+//         "User",
+//         sql.SmallInt,
+//         DEFAULT_C_USER
+//       )
+//       .input(
+//         "Node",
+//         sql.SmallInt,
+//         DEFAULT_C_NODE
+//       )
+//       .execute("sp_Bank_AddEdit");
+
+//     // -------------------------------------------------
+//     // Stored procedure returns:
+//     //
+//     // SELECT @BankCode
+//     // -------------------------------------------------
+
+//     const returnedBankCode =
+//       result.recordset?.[0]?.BankCode ??
+//       result.recordset?.[0]?.[""] ??
+//       bankCode;
+
+//     res.json({
+//       success: true,
+//       message: "Bank updated successfully",
+//       data: {
+//         BankCode: returnedBankCode,
+//         BankName: BankName.trim(),
+//         BranchName: BranchName?.trim() || "",
+//         IFSCCode: IFSCCode?.trim() || "",
+//         Status: Status === false ? false : true,
+//       },
+//     });
+
+//   } catch (error) {
+//     console.error("UPDATE BANK ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to update bank",
+//       error: error.message,
+//     });
+//   }
+// });
+
+
+// // =====================================================
+// // DELETE BANK
+// // DELETE /api/banks/:id
+// // =====================================================
+
+// router.delete("/:id", async (req, res) => {
+//   try {
+//     const bankCode = Number(req.params.id);
+
+//     if (!Number.isInteger(bankCode)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Bank Code",
+//       });
+//     }
+
+//     const pool = await getPool();
+
+//     // -------------------------------------------------
+//     // Check company references
+//     // -------------------------------------------------
+
+//     const companyReference = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .query(`
+//         SELECT COUNT(*) AS Total
+//         FROM dbo.tbl_Company
+//         WHERE BankCode = @BankCode
+//       `);
+
+//     if (companyReference.recordset[0].Total > 0) {
+//       return res.status(409).json({
+//         success: false,
+//         message:
+//           "Bank cannot be deleted because companies are using it",
+//       });
+//     }
+
+//     // -------------------------------------------------
+//     // Delete
+//     // -------------------------------------------------
+
+//     const result = await pool
+//       .request()
+//       .input(
+//         "BankCode",
+//         sql.Int,
+//         bankCode
+//       )
+//       .query(`
+//         DELETE FROM dbo.tbl_Bank
+//         WHERE BankCode = @BankCode
+//       `);
+
+//     if (result.rowsAffected[0] === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Bank not found",
+//       });
+//     }
+
+//     res.json({
+//       success: true,
+//       message: "Bank deleted successfully",
+//     });
+
+//   } catch (error) {
+//     console.error("DELETE BANK ERROR:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to delete bank",
+//       error: error.message,
+//     });
+//   }
+// });
+
+
+// // =====================================================
+// // EXPORT ROUTER
+// // =====================================================
+
+// module.exports = router;
+
+
+
 const express = require("express");
 const { getPool, sql } = require("../config/db");
 
@@ -5,11 +1036,14 @@ const router = express.Router();
 
 // =====================================================
 // DEFAULT AUDIT VALUES
-// Change these later if you have logged-in user/node
+// =====================================================
+// Change these later when logged-in User/Node values
+// are available from authentication/session.
 // =====================================================
 
 const DEFAULT_C_USER = 1;
 const DEFAULT_C_NODE = 1;
+
 
 // =====================================================
 // GET ALL BANKS
@@ -41,6 +1075,7 @@ router.get("/", async (req, res) => {
       success: true,
       data: result.recordset,
     });
+
   } catch (error) {
     console.error("GET BANKS ERROR:", error);
 
@@ -51,6 +1086,7 @@ router.get("/", async (req, res) => {
     });
   }
 });
+
 
 // =====================================================
 // GET BANK BY CODE
@@ -101,6 +1137,7 @@ router.get("/:id", async (req, res) => {
       success: true,
       data: result.recordset[0],
     });
+
   } catch (error) {
     console.error("GET BANK ERROR:", error);
 
@@ -112,9 +1149,16 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+
 // =====================================================
 // CREATE BANK
 // POST /api/banks
+//
+// Uses:
+// sp_Bank_AddEdit
+//
+// BankCode = NULL
+// => Stored procedure generates new BankCode
 // =====================================================
 
 router.post("/", async (req, res) => {
@@ -123,11 +1167,12 @@ router.post("/", async (req, res) => {
       BankName,
       BranchName,
       IFSCCode,
+      Status,
     } = req.body;
 
-    // -----------------------------
+    // -------------------------------------------------
     // Validation
-    // -----------------------------
+    // -------------------------------------------------
 
     if (!BankName || !BankName.trim()) {
       return res.status(400).json({
@@ -138,9 +1183,9 @@ router.post("/", async (req, res) => {
 
     const pool = await getPool();
 
-    // -----------------------------
+    // -------------------------------------------------
     // Check duplicate Bank Name
-    // -----------------------------
+    // -------------------------------------------------
 
     const duplicate = await pool
       .request()
@@ -163,29 +1208,16 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // -----------------------------
-    // Generate next BankCode
-    // -----------------------------
-
-    const codeResult = await pool.request().query(`
-      SELECT
-        ISNULL(MAX(BankCode), 0) + 1 AS NextBankCode
-      FROM dbo.tbl_Bank
-    `);
-
-    const nextBankCode =
-      codeResult.recordset[0].NextBankCode;
-
-    // -----------------------------
-    // Insert
-    // -----------------------------
+    // -------------------------------------------------
+    // ADD BANK USING STORED PROCEDURE
+    // -------------------------------------------------
 
     const result = await pool
       .request()
       .input(
         "BankCode",
         sql.Int,
-        nextBankCode
+        null
       )
       .input(
         "BankName",
@@ -203,54 +1235,45 @@ router.post("/", async (req, res) => {
         IFSCCode?.trim() || ""
       )
       .input(
-        "C_User",
-        sql.Int,
+        "Status",
+        sql.Bit,
+        Status === false ? 0 : 1
+      )
+      .input(
+        "User",
+        sql.SmallInt,
         DEFAULT_C_USER
       )
       .input(
-        "C_Node",
-        sql.Int,
+        "Node",
+        sql.SmallInt,
         DEFAULT_C_NODE
       )
-      .query(`
-        INSERT INTO dbo.tbl_Bank
-        (
-          BankCode,
-          BankName,
-          BranchName,
-          IFSCCode,
-          Status,
-          C_Date,
-          C_User,
-          C_Node
-        )
-        OUTPUT
-          INSERTED.BankCode,
-          INSERTED.BankName,
-          INSERTED.BranchName,
-          INSERTED.IFSCCode,
-          INSERTED.Status,
-          INSERTED.C_Date,
-          INSERTED.C_User,
-          INSERTED.C_Node
-        VALUES
-        (
-          @BankCode,
-          @BankName,
-          @BranchName,
-          @IFSCCode,
-          1,
-          GETDATE(),
-          @C_User,
-          @C_Node
-        )
-      `);
+      .execute("sp_Bank_AddEdit");
+
+    // -------------------------------------------------
+    // Stored procedure returns:
+    //
+    // SELECT @BankCode
+    // -------------------------------------------------
+
+    const bankCode =
+      result.recordset?.[0]?.BankCode ??
+      result.recordset?.[0]?.[""] ??
+      null;
 
     res.status(201).json({
       success: true,
       message: "Bank created successfully",
-      data: result.recordset[0],
+      data: {
+        BankCode: bankCode,
+        BankName: BankName.trim(),
+        BranchName: BranchName?.trim() || "",
+        IFSCCode: IFSCCode?.trim() || "",
+        Status: Status === false ? false : true,
+      },
     });
+
   } catch (error) {
     console.error("CREATE BANK ERROR:", error);
 
@@ -262,9 +1285,16 @@ router.post("/", async (req, res) => {
   }
 });
 
+
 // =====================================================
 // UPDATE BANK
 // PUT /api/banks/:id
+//
+// Uses:
+// sp_Bank_AddEdit
+//
+// BankCode = existing BankCode
+// => Stored procedure performs UPDATE
 // =====================================================
 
 router.put("/:id", async (req, res) => {
@@ -278,12 +1308,20 @@ router.put("/:id", async (req, res) => {
       Status,
     } = req.body;
 
+    // -------------------------------------------------
+    // Validate Bank Code
+    // -------------------------------------------------
+
     if (!Number.isInteger(bankCode)) {
       return res.status(400).json({
         success: false,
         message: "Invalid Bank Code",
       });
     }
+
+    // -------------------------------------------------
+    // Validate Bank Name
+    // -------------------------------------------------
 
     if (!BankName || !BankName.trim()) {
       return res.status(400).json({
@@ -294,9 +1332,34 @@ router.put("/:id", async (req, res) => {
 
     const pool = await getPool();
 
-    // -----------------------------
-    // Check duplicate name
-    // -----------------------------
+    // -------------------------------------------------
+    // Check bank exists
+    // -------------------------------------------------
+
+    const existing = await pool
+      .request()
+      .input(
+        "BankCode",
+        sql.Int,
+        bankCode
+      )
+      .query(`
+        SELECT
+          BankCode
+        FROM dbo.tbl_Bank
+        WHERE BankCode = @BankCode
+      `);
+
+    if (existing.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Bank not found",
+      });
+    }
+
+    // -------------------------------------------------
+    // Check duplicate Bank Name
+    // -------------------------------------------------
 
     const duplicate = await pool
       .request()
@@ -325,9 +1388,9 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    // -----------------------------
-    // Update
-    // -----------------------------
+    // -------------------------------------------------
+    // UPDATE BANK USING STORED PROCEDURE
+    // -------------------------------------------------
 
     const result = await pool
       .request()
@@ -357,52 +1420,40 @@ router.put("/:id", async (req, res) => {
         Status === false ? 0 : 1
       )
       .input(
-        "E_User",
-        sql.Int,
+        "User",
+        sql.SmallInt,
         DEFAULT_C_USER
       )
       .input(
-        "E_Node",
-        sql.Int,
+        "Node",
+        sql.SmallInt,
         DEFAULT_C_NODE
       )
-      .query(`
-        UPDATE dbo.tbl_Bank
-        SET
-          BankName = @BankName,
-          BranchName = @BranchName,
-          IFSCCode = @IFSCCode,
-          Status = @Status,
-          E_Date = GETDATE(),
-          E_User = @E_User,
-          E_Node = @E_Node
-        OUTPUT
-          INSERTED.BankCode,
-          INSERTED.BankName,
-          INSERTED.BranchName,
-          INSERTED.IFSCCode,
-          INSERTED.Status,
-          INSERTED.C_Date,
-          INSERTED.C_User,
-          INSERTED.C_Node,
-          INSERTED.E_Date,
-          INSERTED.E_User,
-          INSERTED.E_Node
-        WHERE BankCode = @BankCode
-      `);
+      .execute("sp_Bank_AddEdit");
 
-    if (result.recordset.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Bank not found",
-      });
-    }
+    // -------------------------------------------------
+    // Stored procedure returns:
+    //
+    // SELECT @BankCode
+    // -------------------------------------------------
+
+    const returnedBankCode =
+      result.recordset?.[0]?.BankCode ??
+      result.recordset?.[0]?.[""] ??
+      bankCode;
 
     res.json({
       success: true,
       message: "Bank updated successfully",
-      data: result.recordset[0],
+      data: {
+        BankCode: returnedBankCode,
+        BankName: BankName.trim(),
+        BranchName: BranchName?.trim() || "",
+        IFSCCode: IFSCCode?.trim() || "",
+        Status: Status === false ? false : true,
+      },
     });
+
   } catch (error) {
     console.error("UPDATE BANK ERROR:", error);
 
@@ -413,6 +1464,7 @@ router.put("/:id", async (req, res) => {
     });
   }
 });
+
 
 // =====================================================
 // DELETE BANK
@@ -432,9 +1484,9 @@ router.delete("/:id", async (req, res) => {
 
     const pool = await getPool();
 
-    // -----------------------------
+    // -------------------------------------------------
     // Check company references
-    // -----------------------------
+    // -------------------------------------------------
 
     const companyReference = await pool
       .request()
@@ -449,9 +1501,7 @@ router.delete("/:id", async (req, res) => {
         WHERE BankCode = @BankCode
       `);
 
-    if (
-      companyReference.recordset[0].Total > 0
-    ) {
+    if (companyReference.recordset[0].Total > 0) {
       return res.status(409).json({
         success: false,
         message:
@@ -459,9 +1509,9 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
-    // -----------------------------
+    // -------------------------------------------------
     // Delete
-    // -----------------------------
+    // -------------------------------------------------
 
     const result = await pool
       .request()
@@ -486,6 +1536,7 @@ router.delete("/:id", async (req, res) => {
       success: true,
       message: "Bank deleted successfully",
     });
+
   } catch (error) {
     console.error("DELETE BANK ERROR:", error);
 
@@ -496,5 +1547,10 @@ router.delete("/:id", async (req, res) => {
     });
   }
 });
+
+
+// =====================================================
+// EXPORT ROUTER
+// =====================================================
 
 module.exports = router;

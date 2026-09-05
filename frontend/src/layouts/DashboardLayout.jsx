@@ -8,20 +8,42 @@ function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <>
+    <div className="app-layout">
+
+      {/* =============================== */}
+      {/* SIDEBAR */}
+      {/* =============================== */}
+
       <Sidebar
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
       />
 
+      {/* =============================== */}
+      {/* MAIN AREA */}
+      {/* =============================== */}
+
       <div className="main-area">
-        <Navbar setMobileOpen={setMobileOpen} />
+
+        {/* ============================= */}
+        {/* NAVBAR */}
+        {/* ============================= */}
+
+        <Navbar
+          setMobileOpen={setMobileOpen}
+        />
+
+        {/* ============================= */}
+        {/* PAGE CONTENT */}
+        {/* ============================= */}
 
         <main className="page-content">
           <Outlet />
         </main>
+
       </div>
-    </>
+
+    </div>
   );
 }
 

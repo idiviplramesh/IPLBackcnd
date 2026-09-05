@@ -1,16 +1,13 @@
 const sql = require("mssql");
 
 const config = {
-  server: process.env.DB_SERVER || "DESKTOP-P5QSJG4\IPL2008",
-
-  database: process.env.DB_DATABASE || "IPL_Temple",
-
+  server: process.env.DB_SERVER,
+  database: process.env.DB_DATABASE,
   user: process.env.DB_USER,
-
   password: process.env.DB_PASSWORD,
 
   options: {
-    instanceName: process.env.DB_INSTANCE || "IPL2008",
+    instanceName: process.env.DB_INSTANCE,
     encrypt: false,
     trustServerCertificate: true,
     enableArithAbort: true,
@@ -23,7 +20,6 @@ const config = {
   },
 
   connectionTimeout: 15000,
-
   requestTimeout: 30000,
 };
 
@@ -46,11 +42,15 @@ async function getPool() {
     .connect(config)
     .then((pool) => {
       console.log("SQL Server connected successfully");
+      console.log("=================================");
+
       return pool;
     })
     .catch((error) => {
+      console.error("=================================");
       console.error("SQL Server connection failed:");
       console.error(error.message);
+      console.error("=================================");
 
       poolPromise = null;
 

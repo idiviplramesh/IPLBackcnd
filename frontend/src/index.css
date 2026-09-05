@@ -1097,3 +1097,875 @@ body {
     grid-template-columns: 1fr;
   }
 }
+/* =====================================================
+   MASTER MAIN MENU BUTTON
+===================================================== */
+
+.master-menu-button {
+  width: 100%;
+  min-height: 48px;
+
+  border: none;
+  outline: none;
+  cursor: pointer;
+
+  font-family: inherit;
+  text-align: left;
+
+  background: transparent;
+  color: #c7cfdd;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 14px;
+  margin-bottom: 4px;
+
+  border-radius: 8px;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Master hover */
+
+.master-menu-button:hover {
+  background: #222e48;
+  color: #ffffff;
+}
+
+/* Master opened */
+
+.master-menu-button.master-open {
+  background: #222e48;
+  color: #ffffff;
+}
+
+/* Do not show normal NavLink active styling on button */
+
+.master-menu-button.active {
+  background: #222e48;
+  color: #ffffff;
+}
+
+.master-menu-text {
+  flex: 1;
+  font-size: 15px;
+}
+
+/* Arrow */
+
+.master-arrow {
+  margin-left: auto;
+
+  font-size: 10px;
+  color: #aeb8cc;
+
+  width: 18px;
+  text-align: center;
+}
+
+/* =====================================================
+   MASTER SUBMENU
+===================================================== */
+
+.master-submenu {
+  margin: 3px 12px 8px 28px;
+
+  padding-left: 12px;
+
+  border-left: 1px solid #35425d;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* =====================================================
+   MASTER SUBMENU LINK
+===================================================== */
+
+.submenu-link {
+  width: 100%;
+  min-height: 40px;
+
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  box-sizing: border-box;
+
+  border-radius: 7px;
+
+  color: #c8d0df;
+
+  text-decoration: none;
+
+  font-size: 14px;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Submenu hover */
+
+.submenu-link:hover {
+  background: #222e48;
+  color: #ffffff;
+}
+
+/* Submenu active */
+
+.submenu-link.active {
+  background: #5145e5;
+  color: #ffffff;
+}
+
+/* Submenu icon */
+
+.submenu-icon {
+  width: 22px;
+  min-width: 22px;
+
+  text-align: center;
+
+  font-size: 15px;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+  .master-submenu {
+    margin-left: 20px;
+    margin-right: 8px;
+  }
+
+  .master-menu-button {
+    width: 100%;
+  }
+
+  .submenu-link {
+    min-height: 42px;
+  }
+}
+/* =====================================================
+   YOUR EXISTING CSS
+===================================================== */
+
+
+/* =====================================================
+   REPORT SUMMARY
+===================================================== */
+
+.report-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  background: #ffffff;
+  border: 1px solid #e1e5ec;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-card span {
+  font-size: 14px;
+  color: #666;
+}
+
+.summary-card strong {
+  font-size: 24px;
+  color: #111827;
+}
+
+
+/* =====================================================
+   REPORT FILTER
+===================================================== */
+
+.report-filter {
+  margin-bottom: 20px;
+}
+
+
+/* =====================================================
+   REPORT TABLE
+===================================================== */
+
+.reports-page .table-card {
+  margin-bottom: 30px;
+}
+
+
+/* =====================================================
+   SIDEBAR REPORTS
+===================================================== */
+
+.sidebar-menu-section {
+  margin-top: 8px;
+}
+
+.menu-parent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.submenu {
+  padding-left: 20px;
+}
+
+.submenu-item {
+  display: block;
+  padding: 10px 16px;
+  text-decoration: none;
+  color: #ffffff;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 900px) {
+  .report-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .report-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =====================================================
+   PRINT
+===================================================== */
+
+@media print {
+
+  body {
+    background: #ffffff;
+  }
+
+  .sidebar,
+  .page-header,
+  .report-filter,
+  .search-input,
+  button {
+    display: none !important;
+  }
+
+  .table-card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .report-summary {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  table {
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid #000;
+  }
+}
+/* =====================================================
+   PRINT
+===================================================== */
+
+@media print {
+
+  body {
+    background: #ffffff;
+  }
+
+  .sidebar,
+  .page-header,
+  .report-filter,
+  .search-input,
+  button,
+  .report-summary {
+    display: none !important;
+  }
+
+  .table-card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  table {
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid #000;
+  }
+}
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar {
+  width: 250px;
+  min-width: 250px;
+  height: 100vh;
+
+  background: #111827;
+  color: #ffffff;
+
+  display: flex;
+  flex-direction: column;
+
+  position: fixed;
+  left: 0;
+  top: 0;
+
+  z-index: 1000;
+
+  box-shadow: 4px 0 18px rgba(0, 0, 0, 0.12);
+
+  overflow-y: auto;
+}
+
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.sidebar-logo {
+  height: 78px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 0 18px;
+
+  border-bottom: 1px solid
+    rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-logo-icon {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 12px;
+
+  background: #4f46e5;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+}
+
+.sidebar-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sidebar-subtitle {
+  font-size: 11px;
+
+  color: #9ca3af;
+
+  margin-top: 2px;
+}
+
+
+/* =========================================================
+   USER BOX
+========================================================= */
+
+.sidebar-user-box {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin: 16px 12px 8px;
+
+  padding: 11px;
+
+  background: rgba(255, 255, 255, 0.06);
+
+  border-radius: 10px;
+}
+
+.sidebar-user-avatar {
+  width: 36px;
+  height: 36px;
+
+  border-radius: 50%;
+
+  background: #4f46e5;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sidebar-user-info {
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  font-size: 13px;
+  font-weight: 600;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-type {
+  font-size: 11px;
+  color: #9ca3af;
+
+  margin-top: 2px;
+}
+
+
+/* =========================================================
+   FINANCIAL YEAR
+========================================================= */
+
+.sidebar-fy {
+  margin: 6px 12px 14px;
+
+  padding: 10px 12px;
+
+  border-radius: 9px;
+
+  background: rgba(79, 70, 229, 0.14);
+
+  border: 1px solid
+    rgba(99, 102, 241, 0.2);
+}
+
+.sidebar-fy-label {
+  display: block;
+
+  font-size: 10px;
+
+  color: #9ca3af;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.5px;
+}
+
+.sidebar-fy-value {
+  display: block;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+  color: #c7d2fe;
+
+  margin-top: 3px;
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.sidebar-navigation {
+  flex: 1;
+
+  padding: 0 10px 15px;
+}
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+.sidebar-main-link {
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 0 12px;
+
+  margin-bottom: 5px;
+
+  border-radius: 9px;
+
+  color: #d1d5db;
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sidebar-main-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+
+  color: #ffffff;
+
+  transform: translateX(2px);
+}
+
+.sidebar-main-link.active {
+  background: #4f46e5;
+
+  color: #ffffff;
+
+  font-weight: 600;
+
+  box-shadow: 0 4px 10px
+    rgba(79, 70, 229, 0.25);
+}
+
+.sidebar-main-icon {
+  width: 22px;
+
+  text-align: center;
+
+  font-size: 16px;
+}
+
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.sidebar-section {
+  margin-top: 5px;
+}
+
+
+/* =========================================================
+   SECTION HEADER
+========================================================= */
+
+.sidebar-section-header {
+  width: 100%;
+
+  height: 42px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #d1d5db;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 12px;
+
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar-section-header:hover {
+  background: rgba(255, 255, 255, 0.07);
+
+  color: #ffffff;
+}
+
+.sidebar-section-header.open {
+  color: #ffffff;
+
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.sidebar-section-left {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+}
+
+.sidebar-section-icon {
+  width: 22px;
+
+  text-align: center;
+
+  font-size: 16px;
+}
+
+.sidebar-arrow {
+  font-size: 16px;
+
+  color: #9ca3af;
+
+  line-height: 1;
+}
+
+
+/* =========================================================
+   SUBMENU
+========================================================= */
+
+.sidebar-submenu {
+  padding: 4px 0 6px 8px;
+
+  margin-left: 12px;
+
+  border-left: 1px solid
+    rgba(255, 255, 255, 0.09);
+}
+
+
+/* =========================================================
+   SIDEBAR LINKS
+========================================================= */
+
+.sidebar-link {
+  min-height: 39px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 7px 10px;
+
+  margin: 2px 0;
+
+  border-radius: 8px;
+
+  color: #aeb6c4;
+
+  text-decoration: none;
+
+  font-size: 13px;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+
+  color: #ffffff;
+
+  transform: translateX(2px);
+}
+
+.sidebar-link.active {
+  background: #4f46e5;
+
+  color: #ffffff;
+
+  font-weight: 600;
+
+  box-shadow: 0 3px 8px
+    rgba(79, 70, 229, 0.22);
+}
+
+.sidebar-link-icon {
+  width: 22px;
+
+  min-width: 22px;
+
+  text-align: center;
+
+  font-size: 15px;
+}
+
+.sidebar-link-text {
+  line-height: 1.2;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.sidebar-footer {
+  padding: 14px 18px;
+
+  border-top: 1px solid
+    rgba(255, 255, 255, 0.08);
+
+  color: #6b7280;
+
+  font-size: 11px;
+
+  display: flex;
+  justify-content: space-between;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #374151;
+
+  border-radius: 10px;
+}
+/* =========================================================
+   PRINT REPORT
+========================================================= */
+
+@media print {
+
+  /* Hide application navigation */
+  .sidebar,
+  .navbar,
+  header,
+  nav {
+    display: none !important;
+  }
+
+  /* Hide controls */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remove application layout restrictions */
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .dashboard-layout,
+  .main-content,
+  .content-area,
+  .page-container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* Report occupies full page */
+  #print-report {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    background: white !important;
+  }
+
+  /* Report title */
+  #print-report .report-title {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  #print-report .report-title h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  #print-report .report-title h3 {
+    margin: 5px 0;
+    font-size: 17px;
+  }
+
+  #print-report .report-title p {
+    margin: 3px 0;
+    font-size: 12px;
+  }
+
+  /* Cards */
+  #print-report .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Tables */
+  #print-report table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  #print-report th,
+  #print-report td {
+    border: 1px solid #999 !important;
+    padding: 6px !important;
+    font-size: 11px !important;
+  }
+
+  #print-report th {
+    font-weight: bold;
+  }
+
+  /* Prevent table rows splitting */
+  #print-report tr {
+    page-break-inside: avoid;
+  }
+
+  /* Remove shadows */
+  * {
+    box-shadow: none !important;
+  }
+
+  /* Print page */
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}

@@ -1,39 +1,85 @@
-const express = require("express");
-const cors = require("cors");
 require("dotenv").config();
 
+const express = require("express");
+const cors = require("cors");
+
+// =====================================================
+// Routes
+// =====================================================
+
 const { getPool } = require("./config/db");
+
 const authRoutes = require("./routes/auth");
-const areaRoutes = require("./routes/areas");
-const bankRoutes = require("./routes/banks");
-const companyRoutes = require("./routes/companies");
-const memberRoutes = require("./routes/members");
+const banksRoutes = require("./routes/banks");
+const areasRoutes = require("./routes/areas");
+const companiesRoutes = require("./routes/companies");
+const headsRoutes = require("./routes/heads");
+const membersRoutes = require("./routes/members");
+const paymentsRoutes = require("./routes/payments");
+const receiptsRoutes = require("./routes/receipts");
+const reportsRoutes = require("./routes/reports");
+const dayBookRoutes = require("./routes/dayBook");
+const dayClosingRoutes = require("./routes/dayClosing");
+const headOpeningRoutes = require("./routes/headOpening");
 
 const app = express();
 
 const PORT = process.env.PORT || 5000;
 
+const CLIENT_URL =
+  process.env.CLIENT_URL || "http://localhost:5173";
+
 // =====================================================
-// MIDDLEWARE
+// STARTUP CONFIG CHECK
+// =====================================================
+
+console.log("=================================");
+console.log("ENVIRONMENT CONFIGURATION");
+console.log("=================================");
+console.log("DB_SERVER:", process.env.DB_SERVER);
+console.log("DB_INSTANCE:", process.env.DB_INSTANCE);
+console.log("DB_DATABASE:", process.env.DB_DATABASE);
+console.log("DB_USER:", process.env.DB_USER);
+console.log("=================================");
+
+// =====================================================
+// CORS
 // =====================================================
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: CLIENT_URL,
     credentials: true,
   })
 );
 
-app.use(express.json());
+// =====================================================
+// BODY PARSER
+// =====================================================
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 // =====================================================
-// TEST ROUTE
+// REQUEST LOGGER
+// =====================================================
+
+app.use((req, res, next) => {
+  console.log(
+    `${new Date().toISOString()} ${req.method} ${req.originalUrl}`
+  );
+
+  next();
+});
+
+// =====================================================
+// ROOT
 // =====================================================
 
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "IPL Temple Backend API",
+    message: "IPL Temple API is running",
   });
 });
 
@@ -45,14 +91,17 @@ app.get("/api/health", async (req, res) => {
   try {
     const pool = await getPool();
 
-    await pool.request().query("SELECT 1 AS Connected");
+    await pool.request().query(
+      "SELECT 1 AS Test"
+    );
 
     res.json({
       success: true,
-      message: "Backend and SQL Server are connected",
+      message: "API and database are working",
+      database: true,
     });
   } catch (error) {
-    console.error("DATABASE ERROR:", error);
+    console.error("HEALTH CHECK ERROR:", error);
 
     res.status(500).json({
       success: false,
@@ -63,74 +112,202 @@ app.get("/api/health", async (req, res) => {
 });
 
 // =====================================================
-// AUTH ROUTES
+// AUTH
 // =====================================================
 
-app.use("/api/auth", authRoutes);
+app.use(
+  "/api/auth",
+  authRoutes
+);
 
 // =====================================================
-// FEATURE ROUTES
+// MASTER ROUTES
 // =====================================================
 
-app.use("/api/areas", areaRoutes);
-app.use("/api/banks", bankRoutes);
-app.use("/api/companies", companyRoutes);
-app.use("/api/members", memberRoutes);
+app.use(
+  "/api/banks",
+  banksRoutes
+);
+
+app.use(
+  "/api/areas",
+  areasRoutes
+);
+
+app.use(
+  "/api/companies",
+  companiesRoutes
+);
+
+app.use(
+  "/api/heads",
+  headsRoutes
+);
+
+app.use(
+  "/api/members",
+  membersRoutes
+);
+
+// =====================================================
+// OPENING BALANCES
+// =====================================================
+
+app.use(
+  "/api/opening-balances",
+  headOpeningRoutes
+);
+
+// =====================================================
+// TRANSACTIONS
+// =====================================================
+
+app.use(
+  "/api/payments",
+  paymentsRoutes
+);
+
+app.use(
+  "/api/receipts",
+  receiptsRoutes
+);
+
+// =====================================================
+// REPORTS
+// =====================================================
+
+app.use(
+  "/api/reports",
+  reportsRoutes
+);
+
+app.use(
+  "/api/reports",
+  dayBookRoutes
+);
+
+// =====================================================
+// DAY CLOSING
+// =====================================================
+
+app.use(
+  "/api/day-closing",
+  dayClosingRoutes
+);
 
 // =====================================================
 // 404
 // =====================================================
 
 app.use((req, res) => {
+  console.log(
+    "404 NOT FOUND:",
+    req.method,
+    req.originalUrl
+  );
+
   res.status(404).json({
     success: false,
-    message: `Cannot ${req.method} ${req.originalUrl}`,
+    message: "API endpoint not found",
+    path: req.originalUrl,
   });
 });
 
 // =====================================================
-// ERROR HANDLER
+// GLOBAL ERROR HANDLER
 // =====================================================
 
-app.use((err, req, res, next) => {
-  console.error("SERVER ERROR:", err);
+app.use(
+  (error, req, res, next) => {
+    console.error(
+      "================================="
+    );
+    console.error(
+      "GLOBAL SERVER ERROR"
+    );
+    console.error(
+      "================================="
+    );
+    console.error(error);
+    console.error(
+      "================================="
+    );
 
-  res.status(500).json({
-    success: false,
-    message: "Internal server error",
-    error: err.message,
-  });
-});
+    if (res.headersSent) {
+      return next(error);
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+);
 
 // =====================================================
 // START SERVER
 // =====================================================
 
-const server = app.listen(PORT, () => {
-  console.log("=================================");
-  console.log("Temple Backend Started");
-  console.log(`Server: http://localhost:${PORT}`);
-  console.log(`Health: http://localhost:${PORT}/api/health`);
-  console.log(`Auth: http://localhost:${PORT}/api/auth`);
-  console.log("=================================");
-});
+async function startServer() {
+  try {
+    console.log(
+      "================================="
+    );
+    console.log(
+      "STARTING IPL TEMPLE API"
+    );
+    console.log(
+      "================================="
+    );
 
-// =====================================================
-// SERVER ERROR
-// =====================================================
+    const pool = await getPool();
 
-server.on("error", (error) => {
-  console.error("SERVER START ERROR:", error);
-});
+    await pool.request().query(
+      "SELECT 1 AS Test"
+    );
 
-// =====================================================
-// PROCESS ERROR
-// =====================================================
+    console.log(
+      "Database connection successful"
+    );
 
-process.on("uncaughtException", (error) => {
-  console.error("UNCAUGHT EXCEPTION:", error);
-});
+    app.listen(PORT, () => {
+      console.log(
+        "================================="
+      );
+      console.log(
+        `Server running on port ${PORT}`
+      );
+      console.log(
+        `API: http://localhost:${PORT}/api`
+      );
+      console.log(
+        `Health: http://localhost:${PORT}/api/health`
+      );
+      console.log(
+        `Client: ${CLIENT_URL}`
+      );
+      console.log(
+        "================================="
+      );
+    });
+  } catch (error) {
+    console.error(
+      "================================="
+    );
+    console.error(
+      "SERVER STARTUP FAILED"
+    );
+    console.error(
+      "================================="
+    );
+    console.error(error);
+    console.error(
+      "================================="
+    );
 
-process.on("unhandledRejection", (error) => {
-  console.error("UNHANDLED REJECTION:", error);
-});
+    process.exit(1);
+  }
+}
+
+startServer();

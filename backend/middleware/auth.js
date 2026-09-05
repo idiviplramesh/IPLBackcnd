@@ -1,392 +1,324 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
+// ============================================================
+// AUTHENTICATION MIDDLEWARE
+// ============================================================
 
-const { getPool, sql } = require("../config/db");
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers.authorization;
 
-const router = express.Router();
-
-const JWT_SECRET =
-  process.env.JWT_SECRET || "ipltemple_secret_2026";
-
-// =====================================================
-// GET /api/auth
-// =====================================================
-
-router.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Authentication API is working",
-  });
-});
-
-// =====================================================
-// POST /api/auth/create-admin
-// =====================================================
-
-router.post("/create-admin", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // -------------------------------------------------
-    // VALIDATION
-    // -------------------------------------------------
-
-    if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Username and password are required",
-      });
-    }
-
-    const cleanUsername = String(username).trim();
-    const cleanPassword = String(password);
-
-    if (cleanUsername.length < 3) {
-      return res.status(400).json({
-        success: false,
-        message: "Username must contain at least 3 characters",
-      });
-    }
-
-    if (cleanUsername.length > 50) {
-      return res.status(400).json({
-        success: false,
-        message: "Username cannot exceed 50 characters",
-      });
-    }
-
-    if (cleanPassword.length < 4) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must contain at least 4 characters",
-      });
-    }
-
-    if (cleanPassword.length > 50) {
-      return res.status(400).json({
-        success: false,
-        message: "Password cannot exceed 50 characters",
-      });
-    }
-
-    // -------------------------------------------------
-    // DATABASE
-    // -------------------------------------------------
-
-    const pool = await getPool();
-
-    // -------------------------------------------------
-    // CHECK EXISTING USER
-    // -------------------------------------------------
-
-    const existingUser = await pool
-      .request()
-      .input(
-        "UserName",
-        sql.VarChar(50),
-        cleanUsername
-      )
-      .query(`
-        SELECT TOP 1
-          UserCode,
-          UserName
-        FROM dbo.tbl_User
-        WHERE UserName = @UserName
-      `);
-
-    if (existingUser.recordset.length > 0) {
-      return res.status(409).json({
-        success: false,
-        message: "Username already exists",
-      });
-    }
-
-    // -------------------------------------------------
-    // GET NEXT USER CODE
-    // -------------------------------------------------
-
-    const nextCodeResult = await pool.request().query(`
-      SELECT
-        ISNULL(MAX(UserCode), 0) + 1 AS NextUserCode
-      FROM dbo.tbl_User
-    `);
-
-    const userCode =
-      nextCodeResult.recordset[0].NextUserCode;
-
-    // -------------------------------------------------
-    // INSERT ADMIN
-    // -------------------------------------------------
-
-    await pool
-      .request()
-      .input(
-        "UserCode",
-        sql.Int,
-        userCode
-      )
-      .input(
-        "UserName",
-        sql.VarChar(50),
-        cleanUsername
-      )
-      .input(
-        "Password",
-        sql.NVarChar(50),
-        cleanPassword
-      )
-      .input(
-        "CreatedDate",
-        sql.DateTime,
-        new Date()
-      )
-      .query(`
-        INSERT INTO dbo.tbl_User
-        (
-          UserCode,
-          UserName,
-          Password,
-          CreatedDate
-        )
-        VALUES
-        (
-          @UserCode,
-          @UserName,
-          @Password,
-          @CreatedDate
-        )
-      `);
-
-    // -------------------------------------------------
-    // RESPONSE
-    // -------------------------------------------------
-
-    return res.status(201).json({
-      success: true,
-      message: "Admin user created successfully",
-      user: {
-        UserCode: userCode,
-        UserName: cleanUsername,
-      },
-    });
-  } catch (error) {
-    console.error("CREATE ADMIN ERROR:");
-    console.error(error);
-
-    return res.status(500).json({
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
       success: false,
-      message: "Unable to create admin user",
-      error: error.message,
+      message: "Authentication required",
     });
   }
-});
 
-// =====================================================
-// POST /api/auth/login
-// =====================================================
+  const token = authHeader.substring(7);
 
-router.post("/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-    console.log("=================================");
-    console.log("LOGIN REQUEST");
-    console.log("Username:", username);
-    console.log("=================================");
+    req.user = decoded;
 
-    // -------------------------------------------------
-    // VALIDATION
-    // -------------------------------------------------
-
-    if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Username and password are required",
-      });
-    }
-
-    const cleanUsername = String(username).trim();
-    const cleanPassword = String(password);
-
-    // -------------------------------------------------
-    // DATABASE
-    // -------------------------------------------------
-
-    const pool = await getPool();
-
-    // -------------------------------------------------
-    // FIND USER
-    // -------------------------------------------------
-
-    const result = await pool
-      .request()
-      .input(
-        "UserName",
-        sql.VarChar(50),
-        cleanUsername
-      )
-      .query(`
-        SELECT TOP 1
-          UserCode,
-          UserName,
-          Password,
-          CreatedDate
-        FROM dbo.tbl_User
-        WHERE UserName = @UserName
-      `);
-
-    // -------------------------------------------------
-    // USER NOT FOUND
-    // -------------------------------------------------
-
-    if (result.recordset.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid username or password",
-      });
-    }
-
-    const user = result.recordset[0];
-
-    // -------------------------------------------------
-    // PASSWORD CHECK
-    // -------------------------------------------------
-
-    if (
-      String(user.Password) !==
-      cleanPassword
-    ) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid username or password",
-      });
-    }
-
-    // -------------------------------------------------
-    // CREATE JWT
-    // -------------------------------------------------
-
-    const token = jwt.sign(
-      {
-        UserCode: user.UserCode,
-        UserName: user.UserName,
-      },
-      JWT_SECRET,
-      {
-        expiresIn: "8h",
-      }
-    );
-
-    // -------------------------------------------------
-    // RESPONSE
-    // -------------------------------------------------
-
-    console.log("LOGIN SUCCESS");
-    console.log("UserCode:", user.UserCode);
-    console.log("UserName:", user.UserName);
-    console.log("=================================");
-
-    return res.json({
-      success: true,
-      message: "Login successful",
-      token,
-      user: {
-        UserCode: user.UserCode,
-        UserName: user.UserName,
-        CreatedDate: user.CreatedDate,
-      },
-    });
+    next();
   } catch (error) {
-    console.error("LOGIN ERROR:");
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Login failed",
-      error: error.message,
-    });
-  }
-});
-
-// =====================================================
-// GET /api/auth/me
-// =====================================================
-
-router.get("/me", async (req, res) => {
-  try {
-    const authHeader =
-      req.headers.authorization;
-
-    if (!authHeader) {
-      return res.status(401).json({
-        success: false,
-        message: "Authorization token required",
-      });
-    }
-
-    const token =
-      authHeader.startsWith("Bearer ")
-        ? authHeader.substring(7)
-        : authHeader;
-
-    const decoded = jwt.verify(
-      token,
-      JWT_SECRET
-    );
-
-    // -------------------------------------------------
-    // DATABASE
-    // -------------------------------------------------
-
-    const pool = await getPool();
-
-    const result = await pool
-      .request()
-      .input(
-        "UserCode",
-        sql.Int,
-        decoded.UserCode
-      )
-      .query(`
-        SELECT TOP 1
-          UserCode,
-          UserName,
-          Password,
-          CreatedDate
-        FROM dbo.tbl_User
-        WHERE UserCode = @UserCode
-      `);
-
-    if (result.recordset.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    const user = result.recordset[0];
-
-    return res.json({
-      success: true,
-      user: {
-        UserCode: user.UserCode,
-        UserName: user.UserName,
-        CreatedDate: user.CreatedDate,
-      },
-    });
-  } catch (error) {
-    console.error("ME ERROR:");
-    console.error(error);
+    console.error("JWT ERROR:", error);
 
     return res.status(401).json({
       success: false,
       message: "Invalid or expired token",
     });
   }
-});
+}
 
-// =====================================================
-// EXPORT
-// =====================================================
 
-module.exports = router;
+// ============================================================
+// CREATE USER
+// POST /api/auth/create-user
+// ADMIN ONLY
+// ============================================================
+
+router.post(
+  "/create-user",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      console.log("");
+      console.log("=================================");
+      console.log("CREATE USER REQUEST");
+      console.log("=================================");
+
+      // --------------------------------------------------------
+      // CHECK ADMIN
+      // --------------------------------------------------------
+
+      const loggedInUserType =
+        String(req.user?.UserType || "").trim().toUpperCase();
+
+      if (loggedInUserType !== "ADMIN") {
+        return res.status(403).json({
+          success: false,
+          message: "Only ADMIN users can create users.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // GET DATA
+      // --------------------------------------------------------
+
+      const {
+        userCode,
+        username,
+        password,
+        userType,
+      } = req.body;
+
+      // --------------------------------------------------------
+      // VALIDATION
+      // --------------------------------------------------------
+
+      if (
+        userCode === undefined ||
+        userCode === null ||
+        userCode === ""
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "User Code is required.",
+        });
+      }
+
+      const cleanUserCode = Number(userCode);
+
+      if (!Number.isInteger(cleanUserCode) || cleanUserCode <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid User Code.",
+        });
+      }
+
+      const cleanUsername =
+        String(username || "").trim();
+
+      const cleanPassword =
+        String(password || "");
+
+      const cleanUserType =
+        String(userType || "MEMBER")
+          .trim()
+          .toUpperCase();
+
+      if (!cleanUsername) {
+        return res.status(400).json({
+          success: false,
+          message: "Username is required.",
+        });
+      }
+
+      if (cleanUsername.length < 3) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Username must contain at least 3 characters.",
+        });
+      }
+
+      if (cleanUsername.length > 50) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Username cannot exceed 50 characters.",
+        });
+      }
+
+      if (!cleanPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Password is required.",
+        });
+      }
+
+      if (cleanPassword.length < 4) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Password must contain at least 4 characters.",
+        });
+      }
+
+      if (cleanPassword.length > 50) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Password cannot exceed 50 characters.",
+        });
+      }
+
+      if (
+        cleanUserType !== "ADMIN" &&
+        cleanUserType !== "MEMBER"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "User Type must be ADMIN or MEMBER.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // DATABASE
+      // --------------------------------------------------------
+
+      const pool = await getPool();
+
+      // --------------------------------------------------------
+      // CHECK USER CODE
+      // --------------------------------------------------------
+
+      const existingCode =
+        await pool
+          .request()
+          .input(
+            "UserCode",
+            sql.Int,
+            cleanUserCode
+          )
+          .query(`
+            SELECT TOP 1
+              UserCode,
+              UserName
+            FROM dbo.tbl_User
+            WHERE UserCode = @UserCode
+          `);
+
+      if (existingCode.recordset.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "User Code already exists.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // CHECK USERNAME
+      // --------------------------------------------------------
+
+      const existingUsername =
+        await pool
+          .request()
+          .input(
+            "UserName",
+            sql.VarChar(50),
+            cleanUsername
+          )
+          .query(`
+            SELECT TOP 1
+              UserCode,
+              UserName
+            FROM dbo.tbl_User
+            WHERE UserName = @UserName
+          `);
+
+      if (existingUsername.recordset.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Username already exists.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // INSERT USER
+      // --------------------------------------------------------
+
+      await pool
+        .request()
+        .input(
+          "UserCode",
+          sql.Int,
+          cleanUserCode
+        )
+        .input(
+          "UserName",
+          sql.VarChar(50),
+          cleanUsername
+        )
+        .input(
+          "Password",
+          sql.NVarChar(50),
+          cleanPassword
+        )
+        .input(
+          "UserType",
+          sql.VarChar(20),
+          cleanUserType
+        )
+        .input(
+          "CreatedDate",
+          sql.DateTime,
+          new Date()
+        )
+        .query(`
+          INSERT INTO dbo.tbl_User
+          (
+            UserCode,
+            UserName,
+            Password,
+            UserType,
+            CreatedDate
+          )
+          VALUES
+          (
+            @UserCode,
+            @UserName,
+            @Password,
+            @UserType,
+            @CreatedDate
+          )
+        `);
+
+      console.log(
+        "USER CREATED:",
+        cleanUserCode,
+        cleanUsername,
+        cleanUserType
+      );
+
+      console.log(
+        "================================="
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: "User created successfully.",
+        user: {
+          UserCode: cleanUserCode,
+          UserName: cleanUsername,
+          UserType: cleanUserType,
+        },
+      });
+
+    } catch (error) {
+      console.error(
+        "CREATE USER ERROR:",
+        error
+      );
+
+      if (
+        error.number === 2627 ||
+        error.number === 2601
+      ) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "User Code or Username already exists.",
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to create user.",
+        error: error.message,
+      });
+    }
+  }
+);
