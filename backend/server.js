@@ -1,318 +1,4 @@
-// require("dotenv").config();
-
-// const express = require("express");
-// const cors = require("cors");
-
-// // =====================================================
-// // Routes
-// // =====================================================
-
-// const { getPool } = require("./config/db");
-
-// const authRoutes = require("./routes/auth");
-// const banksRoutes = require("./routes/banks");
-// const areasRoutes = require("./routes/areas");
-// const companiesRoutes = require("./routes/companies");
-// const headsRoutes = require("./routes/heads");
-// const membersRoutes = require("./routes/members");
-// const paymentsRoutes = require("./routes/payments");
-// const receiptsRoutes = require("./routes/receipts");
-// const reportsRoutes = require("./routes/reports");
-// const dayBookRoutes = require("./routes/dayBook");
-// const dayClosingRoutes = require("./routes/dayClosing");
-// const headOpeningRoutes = require("./routes/headOpening");
-
-// const app = express();
-
-// const PORT = process.env.PORT || 5000;
-
-// const CLIENT_URL =
-//   process.env.CLIENT_URL || "http://localhost:5173";
-
-// // =====================================================
-// // STARTUP CONFIG CHECK
-// // =====================================================
-
-// console.log("=================================");
-// console.log("ENVIRONMENT CONFIGURATION");
-// console.log("=================================");
-// console.log("DB_SERVER:", process.env.DB_SERVER);
-// console.log("DB_INSTANCE:", process.env.DB_INSTANCE);
-// console.log("DB_DATABASE:", process.env.DB_DATABASE);
-// console.log("DB_USER:", process.env.DB_USER);
-// console.log("=================================");
-
-// // =====================================================
-// // CORS
-// // =====================================================
-
-// app.use(
-//   cors({
-//     origin: CLIENT_URL,
-//     credentials: true,
-//   })
-// );
-
-// // =====================================================
-// // BODY PARSER
-// // =====================================================
-
-// app.use(express.json({ limit: "10mb" }));
-// app.use(express.urlencoded({ extended: true }));
-
-// // =====================================================
-// // REQUEST LOGGER
-// // =====================================================
-
-// app.use((req, res, next) => {
-//   console.log(
-//     `${new Date().toISOString()} ${req.method} ${req.originalUrl}`
-//   );
-
-//   next();
-// });
-
-// // =====================================================
-// // ROOT
-// // =====================================================
-
-// app.get("/", (req, res) => {
-//   res.json({
-//     success: true,
-//     message: "IPL Temple API is running",
-//   });
-// });
-
-// // =====================================================
-// // HEALTH
-// // =====================================================
-
-// app.get("/api/health", async (req, res) => {
-//   try {
-//     const pool = await getPool();
-
-//     await pool.request().query(
-//       "SELECT 1 AS Test"
-//     );
-
-//     res.json({
-//       success: true,
-//       message: "API and database are working",
-//       database: true,
-//     });
-//   } catch (error) {
-//     console.error("HEALTH CHECK ERROR:", error);
-
-//     res.status(500).json({
-//       success: false,
-//       message: "Database connection failed",
-//       error: error.message,
-//     });
-//   }
-// });
-
-// // =====================================================
-// // AUTH
-// // =====================================================
-
-// app.use(
-//   "/api/auth",
-//   authRoutes
-// );
-
-// // =====================================================
-// // MASTER ROUTES
-// // =====================================================
-
-// app.use(
-//   "/api/banks",
-//   banksRoutes
-// );
-
-// app.use(
-//   "/api/areas",
-//   areasRoutes
-// );
-
-// app.use(
-//   "/api/companies",
-//   companiesRoutes
-// );
-
-// app.use(
-//   "/api/heads",
-//   headsRoutes
-// );
-
-// app.use(
-//   "/api/members",
-//   membersRoutes
-// );
-
-// // =====================================================
-// // OPENING BALANCES
-// // =====================================================
-
-// app.use(
-//   "/api/opening-balances",
-//   headOpeningRoutes
-// );
-
-// // =====================================================
-// // TRANSACTIONS
-// // =====================================================
-
-// app.use(
-//   "/api/payments",
-//   paymentsRoutes
-// );
-
-// app.use(
-//   "/api/receipts",
-//   receiptsRoutes
-// );
-
-// // =====================================================
-// // REPORTS
-// // =====================================================
-
-// app.use(
-//   "/api/reports",
-//   reportsRoutes
-// );
-
-// app.use(
-//   "/api/reports",
-//   dayBookRoutes
-// );
-
-// // =====================================================
-// // DAY CLOSING
-// // =====================================================
-
-// app.use(
-//   "/api/day-closing",
-//   dayClosingRoutes
-// );
-
-// // =====================================================
-// // 404
-// // =====================================================
-
-// app.use((req, res) => {
-//   console.log(
-//     "404 NOT FOUND:",
-//     req.method,
-//     req.originalUrl
-//   );
-
-//   res.status(404).json({
-//     success: false,
-//     message: "API endpoint not found",
-//     path: req.originalUrl,
-//   });
-// });
-
-// // =====================================================
-// // GLOBAL ERROR HANDLER
-// // =====================================================
-
-// app.use(
-//   (error, req, res, next) => {
-//     console.error(
-//       "================================="
-//     );
-//     console.error(
-//       "GLOBAL SERVER ERROR"
-//     );
-//     console.error(
-//       "================================="
-//     );
-//     console.error(error);
-//     console.error(
-//       "================================="
-//     );
-
-//     if (res.headersSent) {
-//       return next(error);
-//     }
-
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// );
-
-// // =====================================================
-// // START SERVER
-// // =====================================================
-
-// async function startServer() {
-//   try {
-//     console.log(
-//       "================================="
-//     );
-//     console.log(
-//       "STARTING IPL TEMPLE API"
-//     );
-//     console.log(
-//       "================================="
-//     );
-
-//     const pool = await getPool();
-
-//     await pool.request().query(
-//       "SELECT 1 AS Test"
-//     );
-
-//     console.log(
-//       "Database connection successful"
-//     );
-
-//     app.listen(PORT, () => {
-//       console.log(
-//         "================================="
-//       );
-//       console.log(
-//         `Server running on port ${PORT}`
-//       );
-//       console.log(
-//         `API: http://localhost:${PORT}/api`
-//       );
-//       console.log(
-//         `Health: http://localhost:${PORT}/api/health`
-//       );
-//       console.log(
-//         `Client: ${CLIENT_URL}`
-//       );
-//       console.log(
-//         "================================="
-//       );
-//     });
-//   } catch (error) {
-//     console.error(
-//       "================================="
-//     );
-//     console.error(
-//       "SERVER STARTUP FAILED"
-//     );
-//     console.error(
-//       "================================="
-//     );
-//     console.error(error);
-//     console.error(
-//       "================================="
-//     );
-
-//     process.exit(1);
-//   }
-// }
-
-// startServer();
-
-
+```js
 require("dotenv").config();
 
 const express = require("express");
@@ -347,7 +33,6 @@ const headOpeningRoutes = require("./routes/headOpening");
 
 const app = express();
 
-// Render provides PORT automatically
 const PORT = Number(process.env.PORT) || 5000;
 
 // =====================================================
@@ -367,8 +52,15 @@ console.log("IPL TEMPLE API");
 console.log("ENVIRONMENT CONFIGURATION");
 console.log("=================================");
 
-console.log("NODE_ENV:", process.env.NODE_ENV || "development");
-console.log("PORT:", PORT);
+console.log(
+  "NODE_ENV:",
+  process.env.NODE_ENV || "development"
+);
+
+console.log(
+  "PORT:",
+  PORT
+);
 
 console.log(
   "DB_SERVER:",
@@ -387,12 +79,16 @@ console.log(
 
 console.log(
   "DB_USER:",
-  process.env.DB_USER ? "CONFIGURED" : "NOT SET"
+  process.env.DB_USER
+    ? "CONFIGURED"
+    : "NOT SET"
 );
 
 console.log(
   "DB_PASSWORD:",
-  process.env.DB_PASSWORD ? "CONFIGURED" : "NOT SET"
+  process.env.DB_PASSWORD
+    ? "CONFIGURED"
+    : "NOT SET"
 );
 
 console.log(
@@ -408,8 +104,15 @@ console.log("");
 // =====================================================
 
 const allowedOrigins = [
+  // Local development
   "http://localhost:5173",
   "http://localhost:5174",
+
+  // Main Netlify site
+  "https://ipltemple1.netlify.app",
+  "https://www.ipltemple1.netlify.app",
+
+  // Render / environment configured URL
   CLIENT_URL,
 ].filter(Boolean);
 
@@ -420,19 +123,52 @@ console.log("");
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests such as Postman/server-to-server
+
+      // Allow requests with no Origin
+      // Example: Postman / server-to-server
       if (!origin) {
         return callback(null, true);
       }
 
+      // Allow explicitly configured origins
       if (allowedOrigins.includes(origin)) {
+        console.log(
+          "CORS ALLOWED:",
+          origin
+        );
+
         return callback(null, true);
       }
 
-      console.log("CORS BLOCKED:", origin);
+      // Allow Netlify deploy / preview URLs
+      if (
+        origin.startsWith(
+          "https://ipltemple1.netlify.app"
+        ) ||
+        origin.endsWith(
+          ".ipltemple1.netlify.app"
+        ) ||
+        origin.endsWith(
+          ".netlify.app"
+        )
+      ) {
+        console.log(
+          "CORS ALLOWED NETLIFY:",
+          origin
+        );
+
+        return callback(null, true);
+      }
+
+      console.log(
+        "CORS BLOCKED:",
+        origin
+      );
 
       return callback(
-        new Error("Not allowed by CORS")
+        new Error(
+          "Not allowed by CORS"
+        )
       );
     },
 
@@ -450,6 +186,9 @@ app.use(
     allowedHeaders: [
       "Content-Type",
       "Authorization",
+      "Accept",
+      "Origin",
+      "X-Requested-With",
     ],
   })
 );
@@ -474,88 +213,114 @@ app.use(
 // REQUEST LOGGER
 // =====================================================
 
-app.use((req, res, next) => {
-  console.log(
-    `${new Date().toISOString()} ${req.method} ${req.originalUrl}`
-  );
+app.use(
+  (req, res, next) => {
 
-  next();
-});
+    console.log(
+      `${new Date().toISOString()} ${req.method} ${req.originalUrl}`
+    );
+
+    next();
+  }
+);
 
 // =====================================================
 // ROOT
 // =====================================================
 
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "IPL Temple API is running",
-    environment: process.env.NODE_ENV || "development",
-    port: PORT,
-  });
-});
+app.get(
+  "/",
+  (req, res) => {
+
+    res.status(200).json({
+      success: true,
+      message:
+        "IPL Temple API is running",
+      environment:
+        process.env.NODE_ENV ||
+        "development",
+    });
+  }
+);
 
 // =====================================================
 // API ROOT
 // =====================================================
 
-app.get("/api", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "IPL Temple API",
-    version: "1.0.0",
-  });
-});
+app.get(
+  "/api",
+  (req, res) => {
+
+    res.status(200).json({
+      success: true,
+      message:
+        "IPL Temple API",
+      version: "1.0.0",
+    });
+  }
+);
 
 // =====================================================
 // HEALTH CHECK
 // =====================================================
 
-app.get("/api/health", async (req, res) => {
-  console.log("HEALTH CHECK STARTED");
-
-  try {
-    const pool = await getPool();
-
-    await pool.request().query(
-      "SELECT 1 AS Test"
-    );
+app.get(
+  "/api/health",
+  async (req, res) => {
 
     console.log(
-      "HEALTH CHECK: DATABASE CONNECTED"
+      "HEALTH CHECK STARTED"
     );
 
-    res.status(200).json({
-      success: true,
-      message: "API and database are working",
-      database: true,
-    });
+    try {
 
-  } catch (error) {
-    console.error(
-      "================================="
-    );
+      const pool =
+        await getPool();
 
-    console.error(
-      "HEALTH CHECK DATABASE ERROR"
-    );
+      await pool.request().query(
+        "SELECT 1 AS Test"
+      );
 
-    console.error(
-      error.message
-    );
+      console.log(
+        "HEALTH CHECK: DATABASE CONNECTED"
+      );
 
-    console.error(
-      "================================="
-    );
+      res.status(200).json({
+        success: true,
+        message:
+          "API and database are working",
+        database: true,
+      });
 
-    res.status(500).json({
-      success: false,
-      message: "Database connection failed",
-      database: false,
-      error: error.message,
-    });
+    } catch (error) {
+
+      console.error(
+        "================================="
+      );
+
+      console.error(
+        "HEALTH CHECK DATABASE ERROR"
+      );
+
+      console.error(
+        error.message
+      );
+
+      console.error(
+        "================================="
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Database connection failed",
+        database: false,
+        error:
+          error.message,
+      });
+    }
   }
-});
+);
 
 // =====================================================
 // AUTH
@@ -645,19 +410,24 @@ app.use(
 // 404 HANDLER
 // =====================================================
 
-app.use((req, res) => {
-  console.log(
-    "404 NOT FOUND:",
-    req.method,
-    req.originalUrl
-  );
+app.use(
+  (req, res) => {
 
-  res.status(404).json({
-    success: false,
-    message: "API endpoint not found",
-    path: req.originalUrl,
-  });
-});
+    console.log(
+      "404 NOT FOUND:",
+      req.method,
+      req.originalUrl
+    );
+
+    res.status(404).json({
+      success: false,
+      message:
+        "API endpoint not found",
+      path:
+        req.originalUrl,
+    });
+  }
+);
 
 // =====================================================
 // GLOBAL ERROR HANDLER
@@ -665,6 +435,7 @@ app.use((req, res) => {
 
 app.use(
   (error, req, res, next) => {
+
     console.error(
       "================================="
     );
@@ -691,8 +462,10 @@ app.use(
 
     res.status(500).json({
       success: false,
-      message: "Internal server error",
-      error: error.message,
+      message:
+        "Internal server error",
+      error:
+        error.message,
     });
   }
 );
@@ -702,7 +475,9 @@ app.use(
 // =====================================================
 
 async function startServer() {
+
   try {
+
     console.log(
       "================================="
     );
@@ -716,66 +491,76 @@ async function startServer() {
     );
 
     // =================================================
-    // IMPORTANT:
-    // Start HTTP server FIRST.
-    //
-    // Do NOT connect to SQL Server before app.listen().
-    // If SQL Server is unavailable, Render can still
-    // start the web service and /api/health will report
-    // the database problem.
+    // START HTTP SERVER FIRST
     // =================================================
 
-    const server = app.listen(
-      PORT,
-      "0.0.0.0",
-      () => {
-        console.log("");
-        console.log(
-          "================================="
-        );
+    const server =
+      app.listen(
+        PORT,
+        "0.0.0.0",
+        () => {
 
-        console.log(
-          "IPL TEMPLE BACKEND STARTED"
-        );
+          console.log("");
+          console.log(
+            "================================="
+          );
 
-        console.log(
-          "================================="
-        );
+          console.log(
+            "IPL TEMPLE BACKEND STARTED"
+          );
 
-        console.log(
-          `Server Port: ${PORT}`
-        );
+          console.log(
+            "================================="
+          );
 
-        console.log(
-          "Host: 0.0.0.0"
-        );
+          console.log(
+            `Server Port: ${PORT}`
+          );
 
-        console.log(
-          `Health: /api/health`
-        );
+          console.log(
+            "Host: 0.0.0.0"
+          );
 
-        console.log(
-          `Client: ${CLIENT_URL}`
-        );
+          console.log(
+            "Root: /"
+          );
 
-        console.log(
-          "================================="
-        );
+          console.log(
+            "API: /api"
+          );
 
-        console.log("");
-      }
-    );
+          console.log(
+            "Health: /api/health"
+          );
+
+          console.log(
+            "Auth: /api/auth"
+          );
+
+          console.log(
+            `Client: ${CLIENT_URL}`
+          );
+
+          console.log(
+            "================================="
+          );
+
+          console.log("");
+        }
+      );
 
     // =================================================
-    // OPTIONAL DATABASE STARTUP TEST
+    // DATABASE CONNECTION TEST
     // =================================================
 
     try {
+
       console.log(
         "Testing SQL Server connection..."
       );
 
-      const pool = await getPool();
+      const pool =
+        await getPool();
 
       await pool.request().query(
         "SELECT 1 AS Test"
@@ -843,34 +628,42 @@ async function startServer() {
     process.on(
       "SIGTERM",
       () => {
+
         console.log(
           "SIGTERM received. Closing server..."
         );
 
-        server.close(() => {
-          console.log(
-            "HTTP server closed."
-          );
+        server.close(
+          () => {
 
-          process.exit(0);
-        });
+            console.log(
+              "HTTP server closed."
+            );
+
+            process.exit(0);
+          }
+        );
       }
     );
 
     process.on(
       "SIGINT",
       () => {
+
         console.log(
           "SIGINT received. Closing server..."
         );
 
-        server.close(() => {
-          console.log(
-            "HTTP server closed."
-          );
+        server.close(
+          () => {
 
-          process.exit(0);
-        });
+            console.log(
+              "HTTP server closed."
+            );
+
+            process.exit(0);
+          }
+        );
       }
     );
 
@@ -905,3 +698,4 @@ async function startServer() {
 // =====================================================
 
 startServer();
+```
