@@ -1,29 +1,17 @@
 import axios from "axios";
 
-// ============================================================
-// API BASE URL
-// ============================================================
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://ipl-temple-1.onrender.com/api";
-
-// ============================================================
-// AXIOS INSTANCE
-// ============================================================
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000/api",
 
   headers: {
     "Content-Type": "application/json",
   },
-
-  withCredentials: true,
 });
 
 // ============================================================
-// REQUEST INTERCEPTOR
+// REQUEST
 // ============================================================
 
 api.interceptors.request.use(
@@ -37,70 +25,33 @@ api.interceptors.request.use(
     }
 
     console.log(
-      "================================="
-    );
-
-    console.log(
       "API REQUEST:",
-      config.method?.toUpperCase()
-    );
-
-    console.log(
-      "BASE URL:",
-      config.baseURL
-    );
-
-    console.log(
-      "ENDPOINT:",
-      config.url
-    );
-
-    console.log(
-      "FULL URL:",
+      config.method?.toUpperCase(),
       `${config.baseURL}${config.url}`
-    );
-
-    console.log(
-      "================================="
     );
 
     return config;
   },
-
   (error) => {
     return Promise.reject(error);
   }
 );
 
 // ============================================================
-// RESPONSE INTERCEPTOR
+// RESPONSE
 // ============================================================
 
 api.interceptors.response.use(
   (response) => {
-
-    console.log(
-      "API RESPONSE:",
-      response.status,
-      response.config?.url
-    );
-
     return response;
   },
 
   (error) => {
-
     console.error(
       "=========================================="
     );
 
-    console.error(
-      "API ERROR"
-    );
-
-    console.error(
-      "=========================================="
-    );
+    console.error("API ERROR");
 
     console.error(
       "URL:",
@@ -123,6 +74,8 @@ api.interceptors.response.use(
       error.response?.data
     );
 
+    // IMPORTANT:
+    // Print the actual object as JSON
     console.error(
       "BACKEND RESPONSE JSON:",
       JSON.stringify(
@@ -133,28 +86,8 @@ api.interceptors.response.use(
     );
 
     console.error(
-      "ERROR MESSAGE:",
-      error.message
-    );
-
-    console.error(
       "=========================================="
     );
-
-    // ========================================================
-    // NETWORK / CORS ERROR
-    // ========================================================
-
-    if (!error.response) {
-
-      console.error(
-        "NETWORK/CORS ERROR"
-      );
-
-      console.error(
-        "The browser could not receive a response from the backend."
-      );
-    }
 
     // ========================================================
     // UNAUTHORIZED
@@ -163,7 +96,6 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401
     ) {
-
       localStorage.removeItem(
         "token"
       );
@@ -180,4 +112,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api
+export default api;
